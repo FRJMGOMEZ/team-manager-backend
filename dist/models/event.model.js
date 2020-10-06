@@ -34,6 +34,7 @@ const eventSchema = new mongoose_1.Schema({
     endDate: { type: Number, required: true },
     recursive: { type: Boolean, default: false },
     project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project' },
+    allDay: { type: Boolean },
     startTime: { type: String },
     endTime: { type: String },
     taskEvent: { type: Boolean, default: false }

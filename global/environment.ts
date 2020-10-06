@@ -12,7 +12,7 @@ process.env.TOKEN_SEED = process.env.TOKEN_SEED || 'seed_desarrollo';
 
 ////////////// VENCIMIENTO DEL TOKEN //////////////
 
-process.env.TOKEN_EXP = process.env.TOKEN_EXP || '48h';
+process.env.TOKEN_EXP = process.env.TOKEN_EXP || '2h';
 
 /////////////// ENVIRONMENT /////////////
 process.env.NODE_ENV =  process.env.NODE_ENV || 'developing';

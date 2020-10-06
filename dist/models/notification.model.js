@@ -20,25 +20,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const uniqueValidator = require("mongoose-unique-validator");
-const validRoles = {
-    values: ['ADMIN_ROLE', 'USER_ROLE'],
-    message: '{VALUE} is not a valid role'
-};
-const userSchema = new mongoose_1.Schema({
-    name: { type: String, require: true, unique: true },
-    email: { type: String, require: true, unique: true },
-    password: { type: String, required: [true, "Password is required"] },
-    role: {
-        type: String,
-        required: false,
-        default: "USER_ROLE",
-        enum: validRoles
-    },
-    status: { type: Boolean, default: false },
-    img: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'FileModel' },
-    resetCode: { type: String }
+const notificationSchema = new mongoose_1.Schema({
+    type: { type: String, required: true },
+    userFrom: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
+    usersTo: [{ type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' }],
+    method: { type: String, required: true },
+    checked: { type: Boolean, default: false },
+    date: { type: Number, default: new Date().getTime() },
+    item: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'type' },
+    oldItem: { type: { id: String, name: String, participants: [mongoose_1.default.Schema.Types.ObjectId] } }
 });
-userSchema.plugin(uniqueValidator);
-const User = mongoose_1.default.model('User', userSchema);
-exports.default = User;
+const Notification = mongoose_1.default.model('Notification', notificationSchema);
+exports.default = Notification;

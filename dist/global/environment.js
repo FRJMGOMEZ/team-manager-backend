@@ -5,7 +5,7 @@ process.env.FRONT_URL = process.env.FRONT_URL || 'http://localhost:4200';
 ////////Cambiar el seed a secreto en entorno heroku/////////
 process.env.TOKEN_SEED = process.env.TOKEN_SEED || 'seed_desarrollo';
 ////////////// VENCIMIENTO DEL TOKEN //////////////
-process.env.TOKEN_EXP = process.env.TOKEN_EXP || '48h';
+process.env.TOKEN_EXP = process.env.TOKEN_EXP || '2h';
 /////////////// ENVIRONMENT /////////////
 process.env.NODE_ENV = process.env.NODE_ENV || 'developing';
 /////////////// BASE DE DATOS /////////////

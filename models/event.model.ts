@@ -12,6 +12,7 @@ export interface IEventModel extends Document {
     endDate:number,
     recursive:boolean,
     project?: mongoose.Types.ObjectId | IProject ,
+    allDay:boolean,
     startTime?: string,
     endTime?: string,
     taskEvent?:boolean,
@@ -31,6 +32,7 @@ const eventSchema = new Schema({
     endDate:{type:Number,required:true},
     recursive:{type:Boolean, default:false},
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+    allDay:{type:Boolean},
     startTime: { type: String},
     endTime: { type: String },
     taskEvent:{type:Boolean,default:false}

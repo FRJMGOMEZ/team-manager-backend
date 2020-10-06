@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.router = void 0;
 const express_1 = require("express");
-const login_controller_1 = require("./controllers/login-controller");
+const auth_controller_1 = require("./controllers/auth-controller");
 const users_controller_1 = require("./controllers/users-controller");
 const auth_1 = require("./middlewares/auth");
 const express_fileupload_1 = __importDefault(require("express-fileupload"));
@@ -15,12 +15,15 @@ const demo_1 = require("./middlewares/demo");
 const chat_controller_1 = require("./controllers/chat-controller");
 const password_controller_1 = require("./controllers/password.controller");
 const event_controller_1 = require("./controllers/event-controller");
+const notification_controller_1 = require("./controllers/notification-controller");
 exports.router = express_1.Router();
 exports.router.use(express_fileupload_1.default());
-exports.router.post('/login', auth_1.verifyStatus, login_controller_1.login);
+//// AUTH  ///
+exports.router.post('/login', auth_1.verifyStatus, auth_controller_1.login);
 exports.router.post('/user', users_controller_1.postUser);
+exports.router.get('/check-token', auth_controller_1.checkToken);
+exports.router.get('/refresh-token', auth_controller_1.refreshToken);
 exports.router.get('/users', [auth_1.verifyToken], users_controller_1.getUsers);
-exports.router.put('/check-token', login_controller_1.checkToken);
 exports.router.get('/files/:type/:fileName', files_controller_1.getBackFile);
 exports.router.get('/get-aws-file/:name', files_controller_1.getAwsFile);
 exports.router.put('/upload-file/:download', files_controller_1.postFile);
@@ -30,8 +33,11 @@ exports.router.get('/projects', auth_1.verifyToken, projects_controller_1.getPro
 exports.router.get('/project/:id', auth_1.verifyToken, projects_controller_1.getProjectById);
 exports.router.post('/project', [auth_1.verifyToken], projects_controller_1.postProject);
 exports.router.put('/project', [auth_1.verifyToken], projects_controller_1.putProject);
-exports.router.get('/getParticipants/:id', auth_1.verifyToken, projects_controller_1.getParticipants);
 exports.router.delete('/project/:id', [demo_1.checkDemo, auth_1.verifyToken], projects_controller_1.deleteProject);
+exports.router.get('/getParticipants/:id', auth_1.verifyToken, projects_controller_1.getParticipants);
+///// NOTIFICATIONS /////
+exports.router.patch('/notification/:id', auth_1.verifyToken, notification_controller_1.toggleNotification);
+exports.router.get('/notifications/:userId', auth_1.verifyToken, notification_controller_1.getNotifications);
 exports.router.get('/messages', auth_1.verifyToken, chat_controller_1.getMessages);
 exports.router.get('/messages-to-check', auth_1.verifyToken, chat_controller_1.getMessagesToCheck);
 exports.router.get('/project-files/:id', auth_1.verifyToken, chat_controller_1.getFilesByProject);

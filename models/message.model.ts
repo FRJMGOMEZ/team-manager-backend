@@ -17,6 +17,7 @@ export interface IMessage extends Document{
     date:number
 }
 
+
 const messageSchema = new Schema({
     user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
     project: { type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Project' },

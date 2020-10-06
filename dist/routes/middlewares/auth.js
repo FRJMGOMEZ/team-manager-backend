@@ -25,6 +25,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyRole = exports.verifyToken = exports.verifyStatus = void 0;
 const user_model_1 = __importDefault(require("../../models/user.model"));
 const jwt = __importStar(require("jsonwebtoken"));
+var atob = require('atob');
 /////////////// VERIFYING USER STATUS ///////////////
 exports.verifyStatus = (req, res, next) => {
     let userEmail = req.body.email;
@@ -33,10 +34,9 @@ exports.verifyStatus = (req, res, next) => {
             return res.status(500).json({ ok: false, err });
         }
         if (!userDb) {
-            return res.status(404).json({ ok: false, message: 'No se han encontrado usuarios con las credenciales aportadas' });
+            return res.status(404).json({ ok: false, message: 'CREDENTIALS ARE NOT VALID' });
         }
         if (userDb.status === true) {
-            req.body.user = userDb;
             next();
             return;
         }
@@ -58,7 +58,7 @@ exports.verifyToken = (req, res, next) => {
                 err
             });
         }
-        req.body.user = userDecoded.userDb;
+        req.body.userToken = userDecoded.userToken;
         next();
     });
 };

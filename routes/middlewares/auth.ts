@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../../models/user.model';
 import * as jwt from 'jsonwebtoken';
+var atob = require('atob');
 
 
 /////////////// VERIFYING USER STATUS ///////////////
@@ -11,10 +12,9 @@ export const verifyStatus = (req:Request, res:Response, next:NextFunction) => {
             return res.status(500).json({ ok: false, err })
         }
         if (!userDb) {
-            return res.status(404).json({ ok: false, message: 'No se han encontrado usuarios con las credenciales aportadas' })
+            return res.status(404).json({ ok: false, message: 'CREDENTIALS ARE NOT VALID' })
         }
         if (userDb.status === true) {
-            req.body.user = userDb;
             next()
             return
         } else {
@@ -26,19 +26,18 @@ export const verifyStatus = (req:Request, res:Response, next:NextFunction) => {
     })
 }
 
-
 /////////////// VERIFYING TOKEN ////////////////
 
-export const verifyToken = (req:Request, res:Response, next:NextFunction) => {
+export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     let token = String(req.get('token'));
-    jwt.verify(token, process.env.TOKEN_SEED, (err:any, userDecoded:any) => {
+    jwt.verify(token, process.env.TOKEN_SEED, (err: any, userDecoded: any) => {
         if (err) {
             return res.status(401).json({
                 ok: false,
                 err
             })
         }
-        req.body.user = userDecoded.userDb;
+        req.body.userToken = userDecoded.userToken;
         next()
     })
 }

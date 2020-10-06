@@ -1,34 +1,26 @@
 import { Socket } from "socket.io";
 import { SocketUsersList } from './socket-users-list';
 import { SocketUser } from './socket-user';
-import { joinCalendar } from './rooms/calendar-sockets';
-
 export const socketUsersList = SocketUsersList.instance;
-
-
 export const userInApp = (client: Socket) => {
-    client.on('user-in-app', (payload: { id: string }) => {
-
+    client.on('user-in-app', (payload: { userId:string }) => {
         /// user db id ///
-        let {id} = payload;
-        let user = new SocketUser(client, id)
-
-        /// user entry in app //
+        let {userId} = payload;
+        let user = new SocketUser(client, userId) 
         socketUsersList.userInApp(user)
 
-        /// listenning user out of app ///
+        client.on('user-in-project',(payload:{projectId:string})=>{
+            socketUsersList.joinRoom(client, payload.projectId) 
+        })
+
+        client.on('user-leave-project',(payload:{projectId:string})=>{
+            socketUsersList.leaveRoom(client,payload.projectId)
+        })
+        
+         /// listenning user out of app ///
         client.on('user-out-app', () => {
             socketUsersList.leaveApp(client)
         })
-
-        /// project change ///
-
-        //// listenning in app events ////
-        joinCalendar(client)
-    })
-
-    client.on('leave-room',()=>{
-        socketUsersList.leaveRoom(client)
     })
 }
 

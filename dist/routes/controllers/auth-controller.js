@@ -98,17 +98,3 @@ exports.refreshToken = (req, res) => {
         });
     }));
 };
-/*  const verifyUpdate=(dateExp:number,userDb:IUser,token:string)=> {
-   return new Promise(async(resolve, reject) => {
-       let tokenExp = new Date(dateExp * 1000);
-       let now = new Date();
-       now = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes() + now.getTimezoneOffset())
-       now.setTime(now.getTime() + 3600000 * 10)
-       if (tokenExp.getTime() < now.getTime()) {
-           let newtoken = await jwt.sign({ userDb }, process.env.TOKEN_SEED, { expiresIn: process.env.TOKEN_EXP});
-           resolve(newtoken)
-       } else {
-           resolve(token)
-       }
-   })
-}  */
