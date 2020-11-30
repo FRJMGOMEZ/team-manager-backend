@@ -37,7 +37,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
                 err
             })
         }
-        req.body.userToken = userDecoded.userToken;
+        req.body.userInToken = userDecoded.userInToken;
         next()
     })
 }

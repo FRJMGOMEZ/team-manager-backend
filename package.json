@@ -8,6 +8,9 @@
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+      "node": "10.x"
+  },
   "dependencies": {
     "atob": "^2.1.2",
     "aws-sdk": "^2.686.0",

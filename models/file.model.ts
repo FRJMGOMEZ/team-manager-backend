@@ -5,9 +5,7 @@ import uniqueValidator = require("mongoose-unique-validator");
 export interface IFile extends Document {
     name:string,
     title:string,
-    download:boolean,
-    format:string,
-    production: boolean
+    format:string
 }
 
 const fileSchema = new Schema({

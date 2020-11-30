@@ -31,7 +31,7 @@ export const getNotifications = (req: Request, res: Response)=>{
     Notification
     .find({usersTo:objId})
     .populate({path:'userFrom',model:'User'})
-    .populate({path:'item',model:'EventModel'})
+    .populate({path:'item',model:'Task'})
     .exec((err,notificationsDb)=>{
 
         if(err){

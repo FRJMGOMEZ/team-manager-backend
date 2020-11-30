@@ -4,11 +4,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { IUser } from './user.model';
 import { IProject } from './project.model';
 import { IFile } from './file.model';
+import { ITask } from './task.model';
 export interface IMessage extends Document{
 
     user:mongoose.Types.ObjectId | IUser,
 
-    project:mongoose.Types.ObjectId | IProject,
+    task:mongoose.Types.ObjectId | ITask,
 
     files:mongoose.Types.ObjectId[] | IFile[],
 

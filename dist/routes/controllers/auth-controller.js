@@ -56,8 +56,8 @@ exports.login = (req, res) => {
             });
         }
         userDb.password = ':)';
-        let userToken = userDb;
-        let token = yield jwt.sign({ userToken }, process.env.TOKEN_SEED, { expiresIn: 300000 });
+        let userInToken = userDb;
+        let token = yield jwt.sign({ userInToken }, process.env.TOKEN_SEED, { expiresIn: 300000 });
         res.status(200).json({
             ok: true,
             user: userDb,
@@ -81,19 +81,19 @@ exports.checkToken = (req, res) => {
 exports.refreshToken = (req, res) => {
     let token = req.get('token');
     let payload = JSON.parse(atob(token.split('.')[1]));
-    let { userToken } = payload;
-    user_model_1.default.findById(userToken._id, (err, userDb) => __awaiter(void 0, void 0, void 0, function* () {
+    let { userInToken } = payload;
+    user_model_1.default.findById(userInToken._id, (err, userDb) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
             return res.status(500).json({ ok: false, err });
         }
         if (!userDb) {
             return res.status(401).json({ ok: false, message: 'SESSION HAS EXPIRED' });
         }
-        userToken = userDb;
-        let token = yield jwt.sign({ userToken }, process.env.TOKEN_SEED, { expiresIn: 300000 });
+        userInToken = userDb;
+        let token = yield jwt.sign({ userInToken }, process.env.TOKEN_SEED, { expiresIn: 300000 });
         res.status(200).json({
             ok: true,
-            user: userToken,
+            user: userInToken,
             token
         });
     }));

@@ -25,7 +25,7 @@ exports.getNotifications = (req, res) => {
     notification_model_1.default
         .find({ usersTo: objId })
         .populate({ path: 'userFrom', model: 'User' })
-        .populate({ path: 'item', model: 'EventModel' })
+        .populate({ path: 'item', model: 'Task' })
         .exec((err, notificationsDb) => {
         if (err) {
             res.status(500).json({ ok: false, err });

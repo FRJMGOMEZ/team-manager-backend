@@ -53,7 +53,7 @@ export const getUsers = (req: Request, res: Response) => {
                     message: 'There are no user in DB'
                 })
             }
-            User.countDocuments({ $nor: [{ _id: req.body.userToken._id }] }, (err, count: number) => {
+            User.countDocuments({ $nor: [{ _id: req.body.userInToken._id }] }, (err, count: number) => {
                 if (err) {
                     return res.status(500).json({
                         ok: false,

@@ -1,16 +1,11 @@
 
-import { Request, Response } from 'express';
-import Message from '../../models/message.model';
-import mongoose from 'mongoose';
-import { IMessage } from '../../models/message.model';
-import User from '../../models/user.model';
-import { IUser } from '../../models/user.model';
-import Box from '../../models/box.model';
-import { IBox } from '../../models/box.model';
-import { IFile } from '../../models/file.model';
-import Project, { IProject } from '../../models/project.model';
 
-export const getMessages = (req: Request, res: Response) => {
+
+/* const sendMessage = ()=>{
+    
+} */
+
+/* export const getMessages = (req: Request, res: Response) => {
 
     let projectId = String(req.query.projectId);
     let from = Number(req.query.from);
@@ -43,10 +38,10 @@ export const getMessages = (req: Request, res: Response) => {
                 res.status(200).json({ ok: true, messages: messagesDb, count })
             })
     })
-}
+} */
 
 
-export const getMessagesToCheck = (req: Request, res: Response) => {
+/* export const getMessagesToCheck = (req: Request, res: Response) => {
 
     let userOnline = req.body.user.userDb;
     let requests: Promise<IMessage[]>[] = [];
@@ -89,10 +84,10 @@ export const getMessagesToCheck = (req: Request, res: Response) => {
             }
         })
     })
-}
+} */
 
 
-const findMessages = (res: Response, projectId: mongoose.Types.ObjectId, userLastConnection: number): Promise<IMessage[]> => {
+/* const findMessages = (res: Response, projectId: mongoose.Types.ObjectId, userLastConnection: number): Promise<IMessage[]> => {
     return new Promise((resolve, reject) => {
 
         if (userLastConnection === null) { resolve() } else {
@@ -107,10 +102,10 @@ const findMessages = (res: Response, projectId: mongoose.Types.ObjectId, userLas
                 })
         }
     })
-}
+} */
 
 
-export const getFilesByProject = (req: Request, res: Response) => {
+/* export const getFilesByProject = (req: Request, res: Response) => {
 
     let projectId = req.params.id as string;
 
@@ -124,9 +119,9 @@ export const getFilesByProject = (req: Request, res: Response) => {
         })
         res.status(200).json({ ok: true, files })
     })
-}
+} */
 
-export const postMessage = (req: Request, res: Response) => {
+/* export const postMessage = (req: Request, res: Response) => {
   
     let message = new Message({
         user: req.body.user.userDb._id as mongoose.Types.ObjectId,
@@ -159,10 +154,10 @@ export const postMessage = (req: Request, res: Response) => {
                 })
         })
     })
-}
+} */
 
 
-export const deleteMessage = (req:Request,res:Response)=>{
+/* export const deleteMessage = (req:Request,res:Response)=>{
 
         let id = req.params.id;
 
@@ -188,9 +183,9 @@ export const deleteMessage = (req:Request,res:Response)=>{
                 res.status(200).json({ ok: true, message: messageDeleted })
             })
         })
-}
+} */
 
-export const getMessagesSaved = (req:Request,res:Response)=>{
+/* export const getMessagesSaved = (req:Request,res:Response)=>{
 
         let userOnline = req.body.user.userDb;
         let projectId = req.query.projectId;
@@ -217,10 +212,10 @@ export const getMessagesSaved = (req:Request,res:Response)=>{
                 let messages = boxDb.messages;
                 res.status(200).json({ ok: true, messages })
             })
-}
+} */
 
 
-export const saveMessage = (req: Request, res: Response)=>{
+/* export const saveMessage = (req: Request, res: Response)=>{
 
         let userOnline = req.body.user.userDb;
         let messageId = req.params.id as string;
@@ -235,9 +230,9 @@ export const saveMessage = (req: Request, res: Response)=>{
             }
             res.status(200).json({ ok: true })
         })
-}
+} */
 
-export const searchMessage = (req: Request, res: Response) => {
+/* export const searchMessage = (req: Request, res: Response) => {
 
     let input = req.params.input;
     let projectId = req.query.projectId;
@@ -277,10 +272,10 @@ export const searchMessage = (req: Request, res: Response) => {
 
         res.status(200).json({ ok: true, messages })
     })
-}
+} */
 
 
-export const removeMessageFromBox = (req: Request, res: Response) =>{
+/* export const removeMessageFromBox = (req: Request, res: Response) =>{
         let userOnline = req.body.user.userDb;
         let messageId = req.params.id;
 
@@ -290,6 +285,6 @@ export const removeMessageFromBox = (req: Request, res: Response) =>{
             }
             res.status(200).json({ ok: true })
         })
-}
+} */
 
 

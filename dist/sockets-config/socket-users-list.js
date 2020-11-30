@@ -25,9 +25,10 @@ class SocketUsersList {
         let user = this.users.filter((user) => { return user.client.id === client.id; })[0];
         user.client.leave(room);
     }
-    broadcast(userId, payload, eventName, projectId) {
+    broadcast(userId, payload, eventName, roomId) {
+        console.log({ userId });
         const user = this.users.filter((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); })[0];
-        user.client.broadcast.to(projectId).emit(eventName, payload);
+        user.client.broadcast.to(roomId).emit(eventName, payload);
     }
     //// EMIT THE EVENT TO ALL THE USERS CONNECTED ///
     emit(userId, payload, eventName) {

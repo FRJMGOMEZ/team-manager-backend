@@ -69,7 +69,7 @@ exports.getUsers = (req, res) => {
                 message: 'There are no user in DB'
             });
         }
-        user_model_1.default.countDocuments({ $nor: [{ _id: req.body.userToken._id }] }, (err, count) => {
+        user_model_1.default.countDocuments({ $nor: [{ _id: req.body.userInToken._id }] }, (err, count) => {
             if (err) {
                 return res.status(500).json({
                     ok: false,

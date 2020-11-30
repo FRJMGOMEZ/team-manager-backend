@@ -12,10 +12,9 @@ const express_fileupload_1 = __importDefault(require("express-fileupload"));
 const files_controller_1 = require("./controllers/files-controller");
 const projects_controller_1 = require("./controllers/projects-controller");
 const demo_1 = require("./middlewares/demo");
-const chat_controller_1 = require("./controllers/chat-controller");
 const password_controller_1 = require("./controllers/password.controller");
-const event_controller_1 = require("./controllers/event-controller");
 const notification_controller_1 = require("./controllers/notification-controller");
+const task_controller_1 = require("./controllers/task-controller");
 exports.router = express_1.Router();
 exports.router.use(express_fileupload_1.default());
 //// AUTH  ///
@@ -38,21 +37,21 @@ exports.router.get('/getParticipants/:id', auth_1.verifyToken, projects_controll
 ///// NOTIFICATIONS /////
 exports.router.patch('/notification/:id', auth_1.verifyToken, notification_controller_1.toggleNotification);
 exports.router.get('/notifications/:userId', auth_1.verifyToken, notification_controller_1.getNotifications);
-exports.router.get('/messages', auth_1.verifyToken, chat_controller_1.getMessages);
-exports.router.get('/messages-to-check', auth_1.verifyToken, chat_controller_1.getMessagesToCheck);
-exports.router.get('/project-files/:id', auth_1.verifyToken, chat_controller_1.getFilesByProject);
-exports.router.post('/message', auth_1.verifyToken, chat_controller_1.postMessage);
-exports.router.delete('/message/:id', auth_1.verifyToken, chat_controller_1.deleteMessage);
-exports.router.get('/messages-saved', auth_1.verifyToken, chat_controller_1.getMessagesSaved);
-exports.router.put('/save-message/:id', auth_1.verifyToken, chat_controller_1.saveMessage);
-exports.router.get('/search-message/:input', auth_1.verifyToken, chat_controller_1.searchMessage);
-exports.router.put('/remove-message/:id', auth_1.verifyToken, chat_controller_1.removeMessageFromBox);
 exports.router.put('/forgotPassword/:email', password_controller_1.forgotPassword);
 exports.router.put('/setNewPassword/:email/:resetCode/:newPassword', password_controller_1.setNewPassword);
-///// EVENTS /////
-exports.router.post('/event', [auth_1.verifyToken], event_controller_1.postEvent);
-exports.router.get('/events-by-time-range/:selector', [auth_1.verifyToken], event_controller_1.getEventsByTimeRange);
-exports.router.get('/event-by-id/:id', auth_1.verifyToken, event_controller_1.getEventById);
-exports.router.patch('/event/:id', [auth_1.verifyToken], event_controller_1.putEvent);
-exports.router.delete('/event/:id', [auth_1.verifyToken], event_controller_1.deleteEvent);
+///// TASKS /////
+exports.router.post('/task', [auth_1.verifyToken], task_controller_1.postTask);
+exports.router.get('/tasks/:selector', [auth_1.verifyToken], task_controller_1.getTasks);
+exports.router.get('/task-by-id/:id', auth_1.verifyToken, task_controller_1.getTaskById);
+exports.router.patch('/task/:id', [auth_1.verifyToken], task_controller_1.putTask);
+exports.router.delete('/task/:id', [auth_1.verifyToken], task_controller_1.deleteTask);
 exports.default = exports.router;
+/* router.get('/messages', verifyToken,getMessages)
+router.get('/messages-to-check', verifyToken,getMessagesToCheck)
+router.get('/project-files/:id', verifyToken,getFilesByProject)
+router.post('/message', verifyToken, postMessage)
+router.delete('/message/:id', verifyToken,deleteMessage)
+router.get('/messages-saved', verifyToken,getMessagesSaved)
+router.put('/save-message/:id', verifyToken,saveMessage)
+router.get('/search-message/:input', verifyToken,searchMessage)
+router.put('/remove-message/:id', verifyToken, removeMessageFromBox) */ 

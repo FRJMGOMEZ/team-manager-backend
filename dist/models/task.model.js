@@ -20,15 +20,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const uniqueValidator = require("mongoose-unique-validator");
 const taskSchema = new mongoose_1.Schema({
+    name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
-    assignedBy: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
-    user: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
-    project: { type: mongoose_1.default.Schema.Types.ObjectId, require: true, ref: 'Project' },
-    date: { type: Date, default: new Date() },
-    dateLimit: { type: Date, default: new Date() },
-    ok: { type: Boolean, default: false },
-    checked: { type: Boolean, default: false }
+    user: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true }],
+    priority: { type: Number, required: true },
+    status: { type: Boolean, default: false },
+    startDate: { type: Number, required: true },
+    endDate: { type: Number, required: true },
+    prevStates: [{ type: Object }],
+    project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project', required: true },
 });
+taskSchema.plugin(uniqueValidator);
 const Task = mongoose_1.default.model('Task', taskSchema);
 exports.default = Task;

@@ -58,7 +58,7 @@ exports.verifyToken = (req, res, next) => {
                 err
             });
         }
-        req.body.userToken = userDecoded.userToken;
+        req.body.userInToken = userDecoded.userInToken;
         next();
     });
 };

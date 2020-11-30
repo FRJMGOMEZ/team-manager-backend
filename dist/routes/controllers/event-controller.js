@@ -36,7 +36,7 @@ exports.postEvent = (req, res) => {
     let event = new event_model_1.default({
         name: body.name,
         description: body.description,
-        user: body.userToken._id,
+        user: body.userInToken._id,
         participants: body.participants,
         project: body.project ? body.project : null,
         startDate: body.startDate,
@@ -60,14 +60,14 @@ exports.postEvent = (req, res) => {
             }
             res.status(200).json({ ok: true, event: eventDb });
         });
-        let user = req.body.userToken;
+        let user = req.body.userInToken;
         broadcastEventsNotification(user, eventSaved, 'POST');
     });
 };
 exports.getEventsByTimeRange = (req, res) => {
     const from = Number(req.query.from);
     const to = Number(req.query.to);
-    let user = req.body.userToken;
+    let user = req.body.userInToken;
     const selector = req.params.selector;
     let query = {};
     let projectId = req.query.projectId;
@@ -126,7 +126,7 @@ exports.putEvent = (req, res) => {
         if (!eventDb) {
             return res.status(404).json({ ok: true, message: 'No Event has been found with the ID provided' });
         }
-        let user = req.body.userToken;
+        let user = req.body.userInToken;
         event_model_1.default.findById(id, (err, eventUpdated) => {
             if (err) {
                 return res.status(500).json({ ok: false, err });
@@ -166,7 +166,7 @@ exports.deleteEvent = (req, res) => {
             return res.status(404).json({ ok: true, message: 'No Event has been found with the ID provided' });
         }
         res.status(200).json({ ok: true, event: eventDeleted });
-        let user = req.body.userToken;
+        let user = req.body.userInToken;
         console.log({ eventDeleted });
         broadcastEventsNotification(user, eventDeleted, 'DELETE');
     });

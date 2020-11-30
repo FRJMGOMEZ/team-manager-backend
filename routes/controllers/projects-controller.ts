@@ -5,7 +5,7 @@ import Project, { IProject } from '../../models/project.model';
 import User, { IUser } from '../../models/user.model';
 import mongoose from 'mongoose';
 import { AwsBucket } from '../../services/aws-bucket'
-import EventModel from '../../models/event.model';
+import Task from '../../models/task.model';
 import { SocketUsersList } from '../../sockets-config/socket-users-list';
 
 const AWSCrud = AwsBucket.instance;
@@ -15,7 +15,7 @@ const emitProjectChange = (userId: string, payload: { project: IProject, method:
     socketUsersList.emit(userId, payload, 'projects-change')
 }
 export const getProjects = (req: Request, res: Response) => {
-    let userOnline = req.body.userToken;
+    let userOnline = req.body.userInToken;
     Project.find({ participants: userOnline._id })
         .exec((err: Error, projectsDb: IProject[]) => {
             if (err) {
@@ -69,7 +69,7 @@ export const postProject = (req: Request, res: Response) => {
             return res.status(500).json({ ok: false, err })
         }
         res.status(200).json({ project: projectSaved })
-        let user = req.body.userToken;
+        let user = req.body.userInToken;
         emitProjectChange(user._id, { project: projectSaved, method: 'POST', user: user.name })
     })
 }
@@ -95,7 +95,7 @@ export const putProject = (req: Request, res: Response) => {
         
         body._id = projectDb._id;
         res.status(200).json({ ok: true, project: body })
-        let user = req.body.userToken;
+        let user = req.body.userInToken;
         emitProjectChange(user._id, { project: body, method: 'PUT', user: user.name, projectOld: projectDb })
     })
 }
@@ -131,19 +131,19 @@ export const deleteProject = (req: Request, res: Response) => {
                 return res.status(404).json({ ok: false, message: 'There are no projects with the ID provided' })
             }
 
-            deleteEvents(projectDeleted._id,res).then(()=>{
+            deleteTasks(projectDeleted._id,res).then(()=>{
                 res.status(200).json({ ok: true, project: projectDeleted })
-                let user = req.body.userToken;
+                let user = req.body.userInToken;
                 emitProjectChange(user._id, { project: projectDeleted, method: 'DELETE', user: user.name })
             })
     })
 }
 
 
-const deleteEvents = (projectId:string,res:Response)=>{
+const deleteTasks = (projectId:string,res:Response)=>{
     return new Promise((resolve,reject)=>{
-        EventModel.deleteMany({ project: projectId })
-        .exec((err, deletedEvents) => {
+        Task.deleteMany({ project: projectId })
+        .exec((err, deletedTasks) => {
             if (err) {
                 reject(res.status(500).json({ok:false,err}))
             }

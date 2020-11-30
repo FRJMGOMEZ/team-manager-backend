@@ -1,5 +1,6 @@
 import { SocketUser } from './socket-user';
 import { Socket } from "socket.io";
+import { userInApp } from './main-sockets';
 
 export class SocketUsersList{
     public static _instance: SocketUsersList;
@@ -31,9 +32,10 @@ export class SocketUsersList{
         let user: SocketUser = this.users.filter((user: SocketUser) => { return user.client.id === client.id })[0];
         user.client.leave(room) 
     }
-    broadcast(userId:string, payload:any,eventName:string, projectId:string){
+    broadcast(userId:string, payload:any,eventName:string, roomId:string){
+        console.log({userId})
         const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];
-        user.client.broadcast.to(projectId).emit(eventName,payload) 
+        user.client.broadcast.to(roomId).emit(eventName,payload) 
     }
     
     //// EMIT THE EVENT TO ALL THE USERS CONNECTED ///
