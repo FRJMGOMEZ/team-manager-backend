@@ -80,6 +80,7 @@ exports.getTasks = (req, res) => {
     }
     let query = {};
     let querys = Object.keys(req.query).reduce((acum, key) => { key != 'from' && key != 'to' ? acum[key] = req.query[key] : null; return acum; }, {});
+    /* querys = Object.keys(querys).forEach((key) => { key === '_id' ? querys[key] =  mongoose.Types.ObjectId(querys[key]) :null }) */
     switch (selector) {
         case 'day':
             query = Object.assign(Object.assign({ startDate: { $lte: from }, endDate: { $gte: from } }, querys), { participants: participants != null ? { $in: participants } : { $ne: null } });
