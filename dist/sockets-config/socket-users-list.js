@@ -26,7 +26,6 @@ class SocketUsersList {
         user.client.leave(room);
     }
     broadcast(userId, payload, eventName, roomId) {
-        console.log({ userId });
         const user = this.users.filter((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); })[0];
         user.client.broadcast.to(roomId).emit(eventName, payload);
     }

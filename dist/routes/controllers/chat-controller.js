@@ -1,4 +1,77 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMessages = exports.postMessage = void 0;
+const server_1 = __importDefault(require("../../server"));
+const message_model_1 = __importDefault(require("../../models/message.model"));
+const task_model_1 = __importDefault(require("../../models/task.model"));
+const server = server_1.default.instance;
+exports.postMessage = (req, res) => {
+    const files = req.files;
+    const body = req.body;
+    const taskId = req.params.taskId;
+    task_model_1.default.findById(taskId, (err, taskDb) => {
+        if (err) {
+            return res.status(500).json({ ok: false, err });
+        }
+        if (!taskDb) {
+            return res.status(404).json({ ok: false, message: 'The ID introduced do not match with any task' });
+        }
+        const filePosts = [];
+        if (files) {
+            Object.keys(files).forEach((k) => {
+                filePosts.push(server.awsBucket.recordFile(res, files[k]));
+            });
+        }
+        Promise.all(filePosts).then((files) => {
+            let newMessage = new message_model_1.default({
+                user: body.userInToken._id,
+                files,
+                text: body.text,
+                date: body.date,
+                task: taskDb._id
+            });
+            newMessage.save((err, messageSaved) => {
+                if (err) {
+                    return res.status(500).json({ ok: false, err });
+                }
+                messageSaved
+                    .populate({
+                    path: 'user',
+                    model: 'User',
+                    select: 'name _id'
+                })
+                    .populate('files').execPopulate().then((messagePopulated) => {
+                    res.status(200).json({ ok: true, message: messagePopulated });
+                });
+            });
+        });
+    });
+};
+exports.getMessages = (req, res) => {
+    const taskId = req.params.taskId;
+    const from = Number(req.query.from);
+    const to = Number(req.query.to);
+    message_model_1.default.find({ task: taskId })
+        .skip(from)
+        .limit(to)
+        .populate('user')
+        .populate('files')
+        .exec((err, messagesDb) => {
+        if (err) {
+            return res.status(500).json({ ok: false, err });
+        }
+        console.log({ messagesDb });
+        message_model_1.default.countDocuments({ task: taskId }, (err, count) => {
+            if (err) {
+                return res.status(500).json({ ok: false, err });
+            }
+            res.status(200).json({ ok: true, data: { messages: messagesDb, count } });
+        });
+    });
+};
 /* const sendMessage = ()=>{
     
 } */

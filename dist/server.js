@@ -27,9 +27,11 @@ const socket_io_1 = __importDefault(require("socket.io"));
 const http_1 = __importDefault(require("http"));
 const mainSockets = __importStar(require("./sockets-config/main-sockets"));
 const main_sockets_1 = require("./sockets-config/main-sockets");
+const aws_bucket_1 = require("./services/aws-bucket");
 class Server {
     /* CON EL CONSTRUCTOR PRIVADO Y LA LÓGICA DEL GETTER INSTANCE CONSEGUIMOS RESTRINGIR EL INSTANCIAMIENTO DE LA CLASE A UNA INSTANCIA, PARA NO ABRIR MÁS DE UN FLUJO DE SOCKETS */
     constructor() {
+        this.awsBucket = aws_bucket_1.AwsBucket.instance;
         this.app = express_1.default();
         this.port = process.env.PORT;
         this.httpServer = new http_1.default.Server(this.app);

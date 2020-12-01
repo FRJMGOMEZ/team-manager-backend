@@ -8,6 +8,9 @@ import { INotification } from '../../models/notification.model';
 import { ITask } from '../../models/task.model';
 import Task from '../../models/task.model';
 import mongoose from 'mongoose';
+import  ObjectId from 'mongoose'
+
+
 
 const socketUsersList = SocketUsersList.instance;
 const broadcastTasksNotification = (user:{name:string,_id:string}, currentItem: ITask, method: string, oldItem?: ITask) => {
@@ -86,7 +89,9 @@ export const getTasks = (req: Request, res: Response) => {
     }
     let query = {};
     let querys = Object.keys(req.query).reduce((acum,key)=>{ key != 'from' && key != 'to'  ? acum[key] = req.query[key] : null; return acum },{} as any);
-    /* querys = Object.keys(querys).forEach((key) => { key === '_id' ? querys[key] =  mongoose.Types.ObjectId(querys[key]) :null }) */
+    if (querys._id && !ObjectId.isValidObjectId(querys._id)){
+     return res.status(400).json({ok:false,message:'THE ID INTRODUCED HAS A WRONG FORMAT'})
+    }
     switch (selector) {
         case 'day': query = { startDate: { $lte: from }, endDate: { $gte: from }, ...querys, participants: participants != null ? { $in: participants } : { $ne: null}  };
             break;

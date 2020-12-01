@@ -65,10 +65,10 @@ class AwsBucket {
             let cuttedFile = file.name.split('.');
             let extension = cuttedFile[cuttedFile.length - 1];
             if (this.validExtensions.indexOf(extension) < 0) {
-                return res.status(403).json({
+                reject(res.status(403).json({
                     ok: false,
                     message: `The extension of the file is not allowed, the allowed ones are:${this.validExtensions.join(', ')}`
-                });
+                }));
             }
             let fileName = `${new Date().getTime()}.${extension}`;
             var params = {
@@ -78,9 +78,19 @@ class AwsBucket {
             };
             this.s3.upload(params, function (err, data) {
                 if (err) {
-                    return res.status(500).json({ ok: false, err });
+                    reject(res.status(500).json({ ok: false, err }));
                 }
-                resolve({ fileName, data, extension });
+                let newFile = new file_model_1.default({
+                    name: fileName,
+                    title: file.name,
+                    mimeType: file.mimetype
+                });
+                newFile.save((err, fileSaved) => {
+                    if (err) {
+                        reject(res.status(500).json({ ok: false, err }));
+                    }
+                    resolve(fileSaved._id);
+                });
             });
         });
     }

@@ -22,10 +22,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const messageSchema = new mongoose_1.Schema({
     user: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
-    project: { type: mongoose_1.default.Schema.Types.ObjectId, require: true, ref: 'Project' },
-    files: [{ type: mongoose_1.default.Schema.Types.ObjectId, require: true, ref: 'FileModel' }],
+    files: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'FileModel' }],
     text: { type: String },
-    date: { type: Number, default: new Date().getTime() }
+    date: { type: Number, default: new Date().getTime() },
+    task: { type: mongoose_1.default.Schema.Types.ObjectId, required: true }
 });
 const Message = mongoose_1.default.model('Message', messageSchema);
 exports.default = Message;

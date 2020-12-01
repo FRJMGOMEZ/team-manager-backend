@@ -2,29 +2,21 @@
 
 import mongoose, { Schema, Document } from 'mongoose';
 import { IUser } from './user.model';
-import { IProject } from './project.model';
-import { IFile } from './file.model';
-import { ITask } from './task.model';
 export interface IMessage extends Document{
-
     user:mongoose.Types.ObjectId | IUser,
-
-    task:mongoose.Types.ObjectId | ITask,
-
-    files:mongoose.Types.ObjectId[] | IFile[],
-
+    files:mongoose.Types.ObjectId[],
     text:string,
-
-    date:number
+    date:number,
+    task: mongoose.Types.ObjectId
 }
 
 
 const messageSchema = new Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-    project: { type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Project' },
-    files: [{ type: mongoose.Schema.Types.ObjectId, require: true, ref: 'FileModel' }],
-    text: { type: String },
-    date: { type: Number, default: new Date().getTime() }
+    user:{type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+    files:[{type: mongoose.Schema.Types.ObjectId, ref: 'FileModel' }],
+    text:{type: String },
+    date:{type: Number, default: new Date().getTime() },
+    task:{type:mongoose.Schema.Types.ObjectId,required:true}
 });
 
 const Message = mongoose.model<IMessage>('Message', messageSchema);

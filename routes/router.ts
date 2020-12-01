@@ -12,6 +12,7 @@ import { checkDemo } from './middlewares/demo';
 import { forgotPassword, setNewPassword } from './controllers/password.controller';
 import { toggleNotification, getNotifications } from './controllers/notification-controller';
 import { postTask,  getTaskById, putTask, deleteTask, getTasks } from './controllers/task-controller';
+import { postMessage, getMessages } from './controllers/chat-controller';
 export const router = Router();
 
 router.use(fileUpload());
@@ -50,6 +51,11 @@ router.get('/tasks/:selector',[verifyToken],getTasks)
 router.get('/task-by-id/:id',verifyToken, getTaskById)
 router.patch('/task/:id',[verifyToken],putTask)
 router.delete('/task/:id',[verifyToken],deleteTask)
+
+router.post('/message/:taskId',[verifyToken],postMessage)
+router.get('/messages/:taskId',[verifyToken], getMessages)
+
+router.get('/file/:name',getAwsFile)
  export default router;
 
 

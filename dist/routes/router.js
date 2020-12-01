@@ -15,6 +15,7 @@ const demo_1 = require("./middlewares/demo");
 const password_controller_1 = require("./controllers/password.controller");
 const notification_controller_1 = require("./controllers/notification-controller");
 const task_controller_1 = require("./controllers/task-controller");
+const chat_controller_1 = require("./controllers/chat-controller");
 exports.router = express_1.Router();
 exports.router.use(express_fileupload_1.default());
 //// AUTH  ///
@@ -45,6 +46,9 @@ exports.router.get('/tasks/:selector', [auth_1.verifyToken], task_controller_1.g
 exports.router.get('/task-by-id/:id', auth_1.verifyToken, task_controller_1.getTaskById);
 exports.router.patch('/task/:id', [auth_1.verifyToken], task_controller_1.putTask);
 exports.router.delete('/task/:id', [auth_1.verifyToken], task_controller_1.deleteTask);
+exports.router.post('/message/:taskId', [auth_1.verifyToken], chat_controller_1.postMessage);
+exports.router.get('/messages/:taskId', [auth_1.verifyToken], chat_controller_1.getMessages);
+exports.router.get('/file/:name', files_controller_1.getAwsFile);
 exports.default = exports.router;
 /* router.get('/messages', verifyToken,getMessages)
 router.get('/messages-to-check', verifyToken,getMessagesToCheck)

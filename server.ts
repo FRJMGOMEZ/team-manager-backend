@@ -6,6 +6,7 @@ import socketIO from 'socket.io';
 import http from 'http';
 import * as mainSockets from './sockets-config/main-sockets'
 import { socketUsersList } from './sockets-config/main-sockets';
+import { AwsBucket } from './services/aws-bucket';
 
 export default class Server {
 
@@ -19,8 +20,12 @@ export default class Server {
 
     private httpServer: http.Server
 
+    public awsBucket : AwsBucket
+
     /* CON EL CONSTRUCTOR PRIVADO Y LA LÓGICA DEL GETTER INSTANCE CONSEGUIMOS RESTRINGIR EL INSTANCIAMIENTO DE LA CLASE A UNA INSTANCIA, PARA NO ABRIR MÁS DE UN FLUJO DE SOCKETS */
     private constructor() {
+
+        this.awsBucket = AwsBucket.instance;
 
         this.app = express();
 

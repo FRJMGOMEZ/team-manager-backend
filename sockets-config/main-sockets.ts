@@ -19,9 +19,9 @@ export const userInApp = (client: Socket) => {
         client.on('user-in-task',(payload:{taskId:string})=>{
             socketUsersList.joinRoom(client,payload.taskId)
             let roomId = payload.taskId;
-            /* client.on('message',(payload:{message:string,from:string})=>{
+            client.on('message',(payload:{message:string,from:string})=>{
               socketUsersList.broadcast(payload.from,{message:payload.message,from:payload.from},'message',roomId)
-            }) */
+            })
         })
          /// listenning user out of app ///
         client.on('user-out-app', () => {
