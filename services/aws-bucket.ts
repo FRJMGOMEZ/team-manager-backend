@@ -6,7 +6,7 @@ export class AwsBucket {
 
     public static _instance: AwsBucket;
     s3:any
-    validExtensions = ['png', 'jpg', 'gif', 'jpeg', 'pdf', 'JPG'];
+    validExtensions = ['png', 'jpg', 'gif', 'jpeg', 'pdf', 'JPG','xlsx','docx'];
     private constructor(){
         AWS.config.update({
                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -57,7 +57,7 @@ export class AwsBucket {
                let newFile = new FileModel({
                    name:fileName,
                    title:file.name,
-                   mimeType:file.mimetype
+                   type:file.mimetype
                })
 
                newFile.save((err,fileSaved)=>{

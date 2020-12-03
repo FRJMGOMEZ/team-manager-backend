@@ -24,7 +24,7 @@ const uniqueValidator = require("mongoose-unique-validator");
 const fileSchema = new mongoose_1.Schema({
     name: { type: String, unique: true, required: [true, "Name is required"] },
     title: { type: String, required: [true, "Title is required"] },
-    mimeType: { type: String, required: true },
+    type: { type: String, required: true },
 });
 fileSchema.plugin(uniqueValidator);
 const FileModel = mongoose_1.default.model('FileModel', fileSchema);

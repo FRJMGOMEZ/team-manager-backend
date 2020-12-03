@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import FileModel from '../../models/file.model';
 import mongoose from 'mongoose';
 import { AwsBucket } from '../../services/aws-bucket';
-import { resolveAny } from 'dns';
 
 const AWSCrud = AwsBucket.instance;
 
@@ -41,8 +40,6 @@ export const getAwsFile = (req:Request,res:Response)=>{
     let fileName = req.params.name;
     AWSCrud.getFile(fileName).then((file:any) => {
         res.send(file)
-/*         res.send(file.toString('utf-8')) */
-       /*  res.sendFile() */
     })
 }
 

@@ -36,7 +36,7 @@ const AWS = __importStar(require("aws-sdk"));
 const file_model_1 = __importDefault(require("../models/file.model"));
 class AwsBucket {
     constructor() {
-        this.validExtensions = ['png', 'jpg', 'gif', 'jpeg', 'pdf', 'JPG'];
+        this.validExtensions = ['png', 'jpg', 'gif', 'jpeg', 'pdf', 'JPG', 'xlsx', 'docx'];
         AWS.config.update({
             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -83,7 +83,7 @@ class AwsBucket {
                 let newFile = new file_model_1.default({
                     name: fileName,
                     title: file.name,
-                    mimeType: file.mimetype
+                    type: file.mimetype
                 });
                 newFile.save((err, fileSaved) => {
                     if (err) {

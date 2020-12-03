@@ -5,13 +5,13 @@ import uniqueValidator = require("mongoose-unique-validator");
 export interface IFile extends Document {
     name:string,
     title:string,
-    mimeType:string
+    type:string
 }
 
 const fileSchema = new Schema({
     name: { type: String, unique: true, required: [true, "Name is required"] },
     title: { type: String, required: [true, "Title is required"] },
-    mimeType: { type: String,required:true },
+    type: { type: String,required:true },
 });
 
 fileSchema.plugin(uniqueValidator);

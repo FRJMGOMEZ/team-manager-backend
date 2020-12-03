@@ -67,8 +67,6 @@ exports.getAwsFile = (req, res) => {
     let fileName = req.params.name;
     AWSCrud.getFile(fileName).then((file) => {
         res.send(file);
-        /*         res.send(file.toString('utf-8')) */
-        /*  res.sendFile() */
     });
 };
 /* POSTEO DE ARCHIVOS */
