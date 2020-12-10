@@ -1,6 +1,7 @@
 import { SocketUser } from './socket-user';
 import { Socket } from "socket.io";
 import { userInApp } from './main-sockets';
+import User from '../models/user.model';
 
 export class SocketUsersList{
     public static _instance: SocketUsersList;
@@ -17,20 +18,20 @@ export class SocketUsersList{
         this.users.push(user);
     }
     leaveApp(client: Socket) {
+        this.users.find((user:SocketUser)=>{ return user.client.id === client.id})?.client.leaveAll()
         this.users = this.users.filter((user: SocketUser) => { return user.client.id != client.id })
-        this.users.forEach((eachUser:SocketUser)=>{
-            eachUser.client.leaveAll()
-        })
     }
-    
-    joinRoom(client:Socket,room:string){
-        let user:SocketUser = this.users.filter((user: SocketUser) => {return user.client.id === client.id })[0];
+    joinRoom(user:SocketUser,room:string){
         user.client.join(room)
-        
+        user.rooms?.push(room);  
     }
-    leaveRoom(client:Socket,room:string){
-        let user: SocketUser = this.users.filter((user: SocketUser) => { return user.client.id === client.id })[0];
+    leaveRoom(user: SocketUser,room:string){
         user.client.leave(room) 
+        user.rooms = user.rooms.filter((r:string)=>{ return r != room })
+    }
+    getUsersInRoom(room: string) {
+        console.log(this.users)
+        return this.users.filter((u: SocketUser) => { return u.rooms.includes(room) }).map((u:SocketUser)=>{ return u.userId})
     }
     broadcast(userId:string, payload:any,eventName:string, roomId:string){
         const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];

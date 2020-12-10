@@ -4,6 +4,6 @@ export class SocketUser{
     constructor(
         public client: Socket,
         public userId?:string,
-        public room?:string[]){
+        public rooms:string[] = []){
     }
 }

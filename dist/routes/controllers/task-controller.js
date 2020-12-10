@@ -3,12 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTask = exports.toggleTaskStatus = exports.putTask = exports.getTaskById = exports.getTasks = exports.postTask = void 0;
+exports.deleteTask = exports.switchTaskStatus = exports.putTask = exports.getTaskById = exports.getTasks = exports.postTask = void 0;
 const socket_users_list_1 = require("../../sockets-config/socket-users-list");
 const notification_model_1 = __importDefault(require("../../models/notification.model"));
 const task_model_1 = __importDefault(require("../../models/task.model"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const mongoose_2 = __importDefault(require("mongoose"));
+const message_model_1 = __importDefault(require("../../models/message.model"));
 const socketUsersList = socket_users_list_1.SocketUsersList.instance;
 const broadcastTasksNotification = (user, currentItem, method, oldItem) => {
     if (oldItem) {
@@ -163,6 +164,9 @@ exports.putTask = (req, res) => {
                 if (err) {
                     return res.status(500).json({ ok: false, err });
                 }
+                if (!taskUpdated) {
+                    return res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' });
+                }
                 res.status(200).json({ ok: true, task: taskUpdated });
                 broadcastTasksNotification(user, taskUpdated, 'PUT', taskDb);
             });
@@ -194,17 +198,62 @@ const calculatePrevState = (body, taskDb) => {
     });
     return prevState;
 };
-exports.toggleTaskStatus = (req, res) => {
-    let status = req.body.status;
-    let taskId = req.params.id;
-    task_model_1.default.findByIdAndUpdate(taskId, { status }, { new: true }, (err, taskUpdated) => {
+exports.switchTaskStatus = (req, res) => {
+    const taskId = req.body.taskId;
+    const newStatus = req.body.newStatus;
+    task_model_1.default.findById(taskId, (err, taskDb) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
         }
-        if (!taskUpdated) {
-            return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' });
+        if (!taskDb) {
+            return res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' });
         }
-        res.status(200).json({ ok: true, task: taskUpdated });
+        switch (taskDb.status) {
+            case 'pending':
+                taskDb.status = 'on review';
+                taskDb.deliverDate = new Date().getTime();
+                break;
+            case 'on review':
+                if (newStatus === 'pending') {
+                    taskDb.status = 'pending';
+                    taskDb.extraTime += new Date().getTime() - taskDb.deliverDate;
+                    taskDb.deliverDate = 0;
+                }
+                else if (newStatus === 'done') {
+                    taskDb.status = 'done';
+                    taskDb.validationTime = new Date().getTime();
+                    taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
+                }
+                break;
+            case 'done':
+                taskDb.status = 'pending';
+                taskDb.extraTime += new Date().getTime() - taskDb.validationTime;
+                taskDb.validationTime = 0;
+                break;
+        }
+        taskDb.save((err, taskDbUpdated) => {
+            if (err) {
+                return res.status(500).json({ ok: false, err });
+            }
+            taskDbUpdated
+                .populate({
+                path: 'user',
+                model: 'User',
+                select: 'name _id'
+            })
+                .populate({
+                path: 'participants',
+                model: 'User',
+                select: 'name _id'
+            })
+                .execPopulate().then((taskPopulated) => {
+                res.status(200).json({ ok: true, task: taskPopulated });
+                let user = req.body.userInToken;
+                broadcastTasksNotification(user, taskPopulated, 'STATUS CHANGE', taskDb);
+            }).catch((err) => {
+                res.status(500).json({ ok: false, err });
+            });
+        });
     });
 };
 exports.deleteTask = (req, res) => {
@@ -222,9 +271,13 @@ exports.deleteTask = (req, res) => {
         if (!taskDeleted) {
             return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' });
         }
-        res.status(200).json({ ok: true, task: taskDeleted });
-        let user = req.body.userInToken;
-        console.log({ taskDeleted });
-        broadcastTasksNotification(user, taskDeleted, 'DELETE');
+        message_model_1.default.deleteMany({ task: taskDeleted._id }).exec((err, tasksDeleted) => {
+            if (err) {
+                return res.status(500).json({ ok: false, err });
+            }
+            res.status(200).json({ ok: true, task: taskDeleted });
+            let user = req.body.userInToken;
+            broadcastTasksNotification(user, taskDeleted, 'DELETE');
+        });
     });
 };

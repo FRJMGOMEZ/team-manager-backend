@@ -31,9 +31,11 @@ const taskSchema = new mongoose_1.Schema({
     },
     participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true }],
     priority: { type: Number, required: true },
-    status: { type: Boolean, default: false },
+    status: { type: String, default: 'pending' },
     startDate: { type: Number, required: true },
     endDate: { type: Number, required: true },
+    deliverDate: { type: Number },
+    extraTime: { type: Number },
     prevStates: [{ type: Object }],
     project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project', required: true },
 });

@@ -6,7 +6,17 @@ export class AwsBucket {
 
     public static _instance: AwsBucket;
     s3:any
-    validExtensions = ['png', 'jpg', 'gif', 'jpeg', 'pdf', 'JPG','xlsx','docx'];
+    validMIMETypes = [
+        'text/plain',
+        'image/gif',
+        'image/jpeg',
+        'image/png',
+        'application/msword',
+        'application/vnd.oasis.opendocument.text',
+        'text/plain',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
     private constructor(){
         AWS.config.update({
                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -33,15 +43,16 @@ export class AwsBucket {
    }
    recordFile(res:Response, file: any){
        return new Promise((resolve, reject) => {
-           let cuttedFile = file.name.split('.');
-           let extension = cuttedFile[cuttedFile.length - 1];
-           if (this.validExtensions.indexOf(extension) < 0) {
+           let mimeType = file.mimetype;
+           if (this.validMIMETypes.indexOf(mimeType) < 0) {
                reject(res.status(403).json({
                    ok: false,
-                   message: `The extension of the file is not allowed, the allowed ones are:${this.validExtensions.join(', ')}`
+                   message: `The type of the file is not allowed, the allowed ones are:${this.validMIMETypes.join(', ')}`
                }))
            }
-
+           
+           let cuttedFile = file.name.split('.');
+           let extension = cuttedFile[cuttedFile.length - 1];
            let fileName = `${new Date().getTime()}.${extension}`;
            var params: any = {
                Bucket: process.env.AWS_S3_BUCKET_NAME,

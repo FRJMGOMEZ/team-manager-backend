@@ -5,8 +5,16 @@ import mongoose from 'mongoose';
 import { IMessage } from '../../models/message.model';
 import Task from '../../models/task.model';
 import { ITask } from '../../models/task.model';
+import { AwsBucket } from '../../services/aws-bucket';
+import { SocketUsersList } from '../../sockets-config/socket-users-list';
 
-const server = Server.instance;
+const awsBucket = AwsBucket.instance;
+const socketUsersList = SocketUsersList.instance;
+
+const broadcastMessage = (message:IMessage ) => {
+    console.log({message})
+    socketUsersList.broadcast((message.user as any)._id.toString(),message,'message-in',message.task.toString())
+}
 export const postMessage = (req:Request, res: Response) =>{
 
   const files = req.files;
@@ -24,7 +32,7 @@ export const postMessage = (req:Request, res: Response) =>{
       const filePosts: Promise<any>[] = []
       if (files) {
           Object.keys(files).forEach((k: any) => {
-              filePosts.push(server.awsBucket.recordFile(res, files[k]))
+              filePosts.push(awsBucket.recordFile(res, files[k]))
           })
       }
       Promise.all(filePosts).then((files: mongoose.Types.ObjectId[]) => {
@@ -46,7 +54,8 @@ export const postMessage = (req:Request, res: Response) =>{
                       select: 'name _id'
                   })
                   .populate('files').execPopulate().then((messagePopulated: IMessage) => {
-                      res.status(200).json({ ok: true, message: messagePopulated})
+                      res.status(200).json({ ok: true, message: messagePopulated});
+                      broadcastMessage(messagePopulated);
                   })
           })
       })
@@ -56,11 +65,11 @@ export const postMessage = (req:Request, res: Response) =>{
 
 export const getMessages = (req:Request,res:Response)=>{
     const taskId = req.params.taskId;
-    const from = Number(req.query.from);
-    const to = Number(req.query.to)
+    const skip = Number(req.query.skip);
+    const limit = Number(req.query.limit)
     Message.find({task:taskId})
-    .skip(from)
-    .limit(to)
+    .skip(skip)
+    .limit(limit)
     .populate('user')
     .populate('files')
     .exec((err,messagesDb)=>{
@@ -68,7 +77,6 @@ export const getMessages = (req:Request,res:Response)=>{
         if(err){
             return res.status(500).json({ok:false,err})
         }
-        console.log({messagesDb})
         Message.countDocuments({ task: taskId },(err,count:number)=>{
             if (err) {
                 return res.status(500).json({ ok: false, err })

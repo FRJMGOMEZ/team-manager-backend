@@ -9,9 +9,12 @@ export interface ITask extends Document {
     user: mongoose.Types.ObjectId | IUser,
     participants: mongoose.Types.ObjectId[] | IUser[],
     priority: 1|2|3
-    status:boolean
+    status:string
     startDate:number,
     endDate:number,
+    deliverDate:number,
+    validationTime:number,
+    extraTime:number,
     prevStates: {[key: string]: any}[]
     project?: mongoose.Types.ObjectId | IProject ,
     _id: mongoose.Types.ObjectId
@@ -27,9 +30,11 @@ const taskSchema = new Schema({
     },
     participants:[{type:mongoose.Schema.Types.ObjectId, ref:'User',required:true}],
     priority:{type:Number,required:true},
-    status: { type: Boolean,default:false},
+    status: { type:String,default:'pending'},
     startDate:{type:Number,required:true},
     endDate:{type:Number,required:true},
+    deliverDate: { type: Number },
+    extraTime:{type:Number},
     prevStates: [{ type: Object}],
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required:true },
 });

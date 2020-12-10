@@ -10,17 +10,24 @@ export const userInApp = (client: Socket) => {
         socketUsersList.userInApp(user)
 
         client.on('user-in-project',(payload:{projectId:string})=>{
-            socketUsersList.joinRoom(client, payload.projectId) 
+            socketUsersList.joinRoom(user, payload.projectId) 
         })
 
         client.on('user-leave-project',(payload:{projectId:string})=>{
-            socketUsersList.leaveRoom(client,payload.projectId)
+            socketUsersList.leaveRoom(user,payload.projectId)
         })
-        client.on('user-in-task',(payload:{taskId:string})=>{
-            socketUsersList.joinRoom(client,payload.taskId)
+        client.on('user-in-task',(payload:{taskId:string},callback)=>{
+
+            socketUsersList.joinRoom(user,payload.taskId);
             let roomId = payload.taskId;
-            client.on('message',(payload:{message:string,from:string})=>{
-              socketUsersList.broadcast(payload.from,{message:payload.message,from:payload.from},'message',roomId)
+            const usersInRoom = socketUsersList.getUsersInRoom(roomId); 
+            callback(usersInRoom);
+            socketUsersList.broadcast(user.userId as string,usersInRoom,'users-in-task',roomId);
+            
+            client.on('user-out-task',()=>{
+                socketUsersList.leaveRoom(user,roomId);
+                const usersInRoom = socketUsersList.getUsersInRoom(roomId); 
+                socketUsersList.broadcast(user.userId as string, usersInRoom, 'users-in-task', roomId);
             })
         })
          /// listenning user out of app ///

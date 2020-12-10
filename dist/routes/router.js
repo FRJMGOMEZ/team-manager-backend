@@ -46,6 +46,7 @@ exports.router.get('/tasks/:selector', [auth_1.verifyToken], task_controller_1.g
 exports.router.get('/task-by-id/:id', auth_1.verifyToken, task_controller_1.getTaskById);
 exports.router.patch('/task/:id', [auth_1.verifyToken], task_controller_1.putTask);
 exports.router.delete('/task/:id', [auth_1.verifyToken], task_controller_1.deleteTask);
+exports.router.put('/task-status', [auth_1.verifyToken], task_controller_1.switchTaskStatus);
 exports.router.post('/message/:taskId', [auth_1.verifyToken], chat_controller_1.postMessage);
 exports.router.get('/messages/:taskId', [auth_1.verifyToken], chat_controller_1.getMessages);
 exports.router.get('/file/:name', files_controller_1.getAwsFile);

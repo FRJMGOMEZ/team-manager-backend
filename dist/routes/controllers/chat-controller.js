@@ -4,10 +4,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMessages = exports.postMessage = void 0;
-const server_1 = __importDefault(require("../../server"));
 const message_model_1 = __importDefault(require("../../models/message.model"));
 const task_model_1 = __importDefault(require("../../models/task.model"));
-const server = server_1.default.instance;
+const aws_bucket_1 = require("../../services/aws-bucket");
+const socket_users_list_1 = require("../../sockets-config/socket-users-list");
+const awsBucket = aws_bucket_1.AwsBucket.instance;
+const socketUsersList = socket_users_list_1.SocketUsersList.instance;
+const broadcastMessage = (message) => {
+    console.log({ message });
+    socketUsersList.broadcast(message.user._id.toString(), message, 'message-in', message.task.toString());
+};
 exports.postMessage = (req, res) => {
     const files = req.files;
     const body = req.body;
@@ -22,7 +28,7 @@ exports.postMessage = (req, res) => {
         const filePosts = [];
         if (files) {
             Object.keys(files).forEach((k) => {
-                filePosts.push(server.awsBucket.recordFile(res, files[k]));
+                filePosts.push(awsBucket.recordFile(res, files[k]));
             });
         }
         Promise.all(filePosts).then((files) => {
@@ -45,6 +51,7 @@ exports.postMessage = (req, res) => {
                 })
                     .populate('files').execPopulate().then((messagePopulated) => {
                     res.status(200).json({ ok: true, message: messagePopulated });
+                    broadcastMessage(messagePopulated);
                 });
             });
         });
@@ -52,18 +59,17 @@ exports.postMessage = (req, res) => {
 };
 exports.getMessages = (req, res) => {
     const taskId = req.params.taskId;
-    const from = Number(req.query.from);
-    const to = Number(req.query.to);
+    const skip = Number(req.query.skip);
+    const limit = Number(req.query.limit);
     message_model_1.default.find({ task: taskId })
-        .skip(from)
-        .limit(to)
+        .skip(skip)
+        .limit(limit)
         .populate('user')
         .populate('files')
         .exec((err, messagesDb) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
         }
-        console.log({ messagesDb });
         message_model_1.default.countDocuments({ task: taskId }, (err, count) => {
             if (err) {
                 return res.status(500).json({ ok: false, err });

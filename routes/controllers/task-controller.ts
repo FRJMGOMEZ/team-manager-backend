@@ -9,6 +9,7 @@ import { ITask } from '../../models/task.model';
 import Task from '../../models/task.model';
 import mongoose from 'mongoose';
 import  ObjectId from 'mongoose'
+import Message from '../../models/message.model';
 
 
 
@@ -35,6 +36,7 @@ const broadcastTasksNotification = (user:{name:string,_id:string}, currentItem: 
             item: currentItem, 
              oldItem:notification.oldItem,
             _id:notificationSaved._id }
+
         socketUsersList.broadcast(user._id, notificationToSend, 'tasks-change', (currentItem.project as IProject)._id.toString())  
     })
 }
@@ -179,6 +181,9 @@ export const putTask = (req: Request, res: Response) => {
                     if (err) {
                         return res.status(500).json({ ok: false, err })
                     }
+                    if(!taskUpdated){
+                        return res.status(404).json({ok:false, message:'There are no tasks with the ID provided'})
+                    }
                     res.status(200).json({ ok: true, task: taskUpdated })
                     broadcastTasksNotification(user, taskUpdated, 'PUT', taskDb)
                 })
@@ -210,18 +215,63 @@ const calculatePrevState = (body:any,taskDb:any)=>{
     return prevState;
 }
 
-export const toggleTaskStatus = (req: Request, res: Response) => {
-    let status = req.body.status;
-    let taskId = req.params.id;
-    Task.findByIdAndUpdate(taskId, { status }, { new: true }, (err, taskUpdated) => {
+export const switchTaskStatus = (req: Request, res: Response) => {
+    const taskId = req.body.taskId;
+    const newStatus = req.body.newStatus;
+    
+    Task.findById(taskId,(err,taskDb)=>{
         if (err) {
             return res.status(500).json({ ok: false, err })
         }
-        if (!taskUpdated) {
-            return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' })
+        if (!taskDb) {
+            return res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' })
         }
-        res.status(200).json({ ok: true, task: taskUpdated })
+    switch(taskDb.status){
+    case 'pending':
+     taskDb.status = 'on review';
+     taskDb.deliverDate = new Date().getTime();
+    break;
+    case 'on review':
+    if(newStatus === 'pending'){
+     taskDb.status = 'pending';
+     taskDb.extraTime+= new Date().getTime() - taskDb.deliverDate;
+     taskDb.deliverDate = 0;
+    }else if(newStatus === 'done'){
+    taskDb.status = 'done';
+    taskDb.validationTime = new Date().getTime();
+    taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
+    }
+    break;
+    case 'done':
+     taskDb.status = 'pending';
+     taskDb.extraTime+= new Date().getTime() - taskDb.validationTime;
+     taskDb.validationTime = 0;
+    break; 
+    }
+    taskDb.save((err,taskDbUpdated:ITask)=>{
+        if (err) {
+            return res.status(500).json({ ok: false, err })
+        }
+        taskDbUpdated
+        .populate({
+            path: 'user',
+            model: 'User',
+            select: 'name _id'
+        })
+        .populate({
+                path: 'participants',
+                model: 'User',
+                select: 'name _id'
+        })
+        .execPopulate().then((taskPopulated)=>{
+            res.status(200).json({ok:true,task:taskPopulated});
+            let user: IUser = req.body.userInToken;
+            broadcastTasksNotification(user, taskPopulated, 'STATUS CHANGE',taskDb);
+        }).catch((err)=>{
+            res.status(500).json({ok:false,err})
+        })
     })
+  })   
 }
 
 export const deleteTask = (req: Request, res: Response) => {
@@ -241,11 +291,13 @@ export const deleteTask = (req: Request, res: Response) => {
             if (!taskDeleted) {
                 return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' })
             }
-            res.status(200).json({ ok: true, task: taskDeleted })
-
-            let user: IUser = req.body.userInToken;
-            console.log({taskDeleted})
-            broadcastTasksNotification(user, taskDeleted, 'DELETE')
+            Message.deleteMany({ task: taskDeleted._id }).exec((err,tasksDeleted)=>{
+                if (err) {
+                    return res.status(500).json({ ok: false, err })
+                }
+                res.status(200).json({ ok: true, task: taskDeleted })
+                let user: IUser = req.body.userInToken;
+                broadcastTasksNotification(user, taskDeleted, 'DELETE');
+            })
         })
-
 }
