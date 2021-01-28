@@ -60,7 +60,6 @@ exports.forgotPassword = (req, res) => {
         node_mail_1.default.sendMail().then(() => {
             res.status(200).json({ ok: true });
         }).catch((err) => {
-            console.log({ err });
             res.status(500).json({ ok: false, err });
         });
     });

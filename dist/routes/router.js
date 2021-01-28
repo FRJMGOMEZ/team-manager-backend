@@ -23,40 +23,41 @@ exports.router.post('/login', auth_1.verifyStatus, auth_controller_1.login);
 exports.router.post('/user', users_controller_1.postUser);
 exports.router.get('/check-token', auth_controller_1.checkToken);
 exports.router.get('/refresh-token', auth_controller_1.refreshToken);
-exports.router.get('/users', [auth_1.verifyToken], users_controller_1.getUsers);
-exports.router.get('/files/:type/:fileName', files_controller_1.getBackFile);
-exports.router.get('/get-aws-file/:name', files_controller_1.getAwsFile);
-exports.router.put('/upload-file/:download', files_controller_1.postFile);
-exports.router.delete('/delete-file/:fileId', files_controller_1.removeFile);
+exports.router.put('/forgot-password/:email', password_controller_1.forgotPassword);
+exports.router.put('/set-new-password/:email/:resetCode/:newPassword', password_controller_1.setNewPassword);
+//// USERS /////
+exports.router.get('/users', auth_1.verifyToken, users_controller_1.getUsers);
+//// FILES ////
+exports.router.get('/file/:name', files_controller_1.getAwsFile);
+exports.router.put('/upload-file/:download', auth_1.verifyToken, files_controller_1.postFile);
+exports.router.delete('/delete-file/:fileId', auth_1.verifyToken, files_controller_1.deleteFile);
+exports.router.get('/task-files/:id', auth_1.verifyToken, files_controller_1.getTaskFiles);
 //// PROJECTS ////
 exports.router.get('/projects', auth_1.verifyToken, projects_controller_1.getProjects);
 exports.router.get('/project/:id', auth_1.verifyToken, projects_controller_1.getProjectById);
-exports.router.post('/project', [auth_1.verifyToken], projects_controller_1.postProject);
-exports.router.put('/project', [auth_1.verifyToken], projects_controller_1.putProject);
+exports.router.post('/project', auth_1.verifyToken, projects_controller_1.postProject);
+exports.router.put('/project', auth_1.verifyToken, projects_controller_1.putProject);
 exports.router.delete('/project/:id', [demo_1.checkDemo, auth_1.verifyToken], projects_controller_1.deleteProject);
-exports.router.get('/getParticipants/:id', auth_1.verifyToken, projects_controller_1.getParticipants);
+exports.router.get('/get-participants/:id', auth_1.verifyToken, projects_controller_1.getParticipants);
 ///// NOTIFICATIONS /////
-exports.router.patch('/notification/:id', auth_1.verifyToken, notification_controller_1.toggleNotification);
+exports.router.patch('/toggle-notification', auth_1.verifyToken, notification_controller_1.toggleNotification);
 exports.router.get('/notifications/:userId', auth_1.verifyToken, notification_controller_1.getNotifications);
-exports.router.put('/forgotPassword/:email', password_controller_1.forgotPassword);
-exports.router.put('/setNewPassword/:email/:resetCode/:newPassword', password_controller_1.setNewPassword);
+exports.router.get('/notification/:id', auth_1.verifyToken, notification_controller_1.getNotificationById);
 ///// TASKS /////
-exports.router.post('/task', [auth_1.verifyToken], task_controller_1.postTask);
-exports.router.get('/tasks/:selector', [auth_1.verifyToken], task_controller_1.getTasks);
+exports.router.post('/task', auth_1.verifyToken, task_controller_1.postTask);
+exports.router.get('/tasks/:selector', auth_1.verifyToken, task_controller_1.getTasks);
 exports.router.get('/task-by-id/:id', auth_1.verifyToken, task_controller_1.getTaskById);
-exports.router.patch('/task/:id', [auth_1.verifyToken], task_controller_1.putTask);
-exports.router.delete('/task/:id', [auth_1.verifyToken], task_controller_1.deleteTask);
-exports.router.put('/task-status', [auth_1.verifyToken], task_controller_1.switchTaskStatus);
-exports.router.post('/message/:taskId', [auth_1.verifyToken], chat_controller_1.postMessage);
-exports.router.get('/messages/:taskId', [auth_1.verifyToken], chat_controller_1.getMessages);
-exports.router.get('/file/:name', files_controller_1.getAwsFile);
+exports.router.patch('/task/:id', auth_1.verifyToken, task_controller_1.putTask);
+exports.router.delete('/task/:id', auth_1.verifyToken, task_controller_1.deleteTask);
+exports.router.put('/task-status', auth_1.verifyToken, task_controller_1.switchTaskStatus);
+//// MESSAGES /////
+exports.router.post('/message/:taskId', auth_1.verifyToken, chat_controller_1.postMessage);
+exports.router.get('/messages/:taskId', auth_1.verifyToken, chat_controller_1.getMessages);
 exports.default = exports.router;
-/* router.get('/messages', verifyToken,getMessages)
+/*
 router.get('/messages-to-check', verifyToken,getMessagesToCheck)
 router.get('/project-files/:id', verifyToken,getFilesByProject)
-router.post('/message', verifyToken, postMessage)
 router.delete('/message/:id', verifyToken,deleteMessage)
-router.get('/messages-saved', verifyToken,getMessagesSaved)
 router.put('/save-message/:id', verifyToken,saveMessage)
 router.get('/search-message/:input', verifyToken,searchMessage)
 router.put('/remove-message/:id', verifyToken, removeMessageFromBox) */ 

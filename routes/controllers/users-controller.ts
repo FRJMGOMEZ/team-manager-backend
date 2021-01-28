@@ -41,7 +41,6 @@ export const getUsers = (req: Request, res: Response) => {
         .populate('img')
         .exec((err: Error, usersDb: IUser[]) => {
             if (err) {
-                console.log({ err })
                 return res.status(500).json({
                     ok: false,
                     err

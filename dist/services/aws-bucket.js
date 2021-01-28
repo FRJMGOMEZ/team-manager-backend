@@ -123,7 +123,7 @@ class AwsBucket {
                         reject(res.status(500).json({ ok: false, err }));
                     }
                     else {
-                        resolve();
+                        resolve(fileDeleted);
                     }
                 });
             }));
