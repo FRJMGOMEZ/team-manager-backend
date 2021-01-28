@@ -15,7 +15,7 @@ server.app.use(bodyParser.json());
 
 /* Configuramos el router */
 const options: cors.CorsOptions = {
-    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Credentials", "token", "query", "Access-Control-Allow-Request-Method"],
+    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Credentials", "token", "skip", "limit", "query", "Access-Control-Allow-Request-Method"],
     credentials: true,
     methods: "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE",
     origin: process.env.FRONT_URL,

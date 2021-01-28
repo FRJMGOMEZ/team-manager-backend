@@ -26,6 +26,7 @@ const projectSchema = new mongoose_1.Schema({
     participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', default: null }],
     administrators: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', default: null }],
     status: { type: Boolean, default: true },
+    prevStates: [{ type: Object }]
 });
 projectSchema.plugin(uniqueValidator, { message: '{PATH} must be unique' });
 const Project = mongoose_1.default.model('Project', projectSchema);

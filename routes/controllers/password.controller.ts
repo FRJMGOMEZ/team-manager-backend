@@ -40,7 +40,6 @@ export const forgotPassword = (req:Request, res:Response)=>{
                 res.status(200).json({ok:true})
 
             }).catch((err)=>{
-                console.log({err})
                 res.status(500).json({ok:false,err})
             })
         })  

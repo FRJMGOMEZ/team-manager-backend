@@ -9,19 +9,18 @@ export interface IProject extends Document {
 
     name:string,
     participants: mongoose.Types.ObjectId[] | IUser[],
-
     administrators: mongoose.Types.ObjectId[] | IUser[],
-
     status:boolean,
+    prevStates: { [key: string]: any }[]
 
 }
-
 
 const projectSchema = new Schema({
     name: { type: String, unique: true, required: [true, "Name is required"] },
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }],
     administrators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }],
     status: { type: Boolean, default: true },
+    prevStates: [{ type: Object }]
 });
 
 projectSchema.plugin(uniqueValidator, { message: '{PATH} must be unique' });

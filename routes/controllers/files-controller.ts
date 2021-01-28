@@ -1,37 +1,12 @@
 
 import {Request,Response} from 'express'
-import * as path from 'path';
-import * as fs from 'fs';
 import FileModel from '../../models/file.model';
 import mongoose from 'mongoose';
 import { AwsBucket } from '../../services/aws-bucket';
+import Message from '../../models/message.model';
+import { IMessage } from '../../models/message.model';
 
 const AWSCrud = AwsBucket.instance;
-
-export const getBackFile = (req:Request,res:Response)=>{
-
-    let type = req.params.type;
-    let fileName = req.params.fileName;
-     
-    if (type === 'icons') {
-        let pathImage = path.resolve(__dirname, `../../../assets/${type}/${fileName}`);
-        if (fs.existsSync(pathImage)) {
-            res.sendFile(pathImage)
-        } else {
-            let pathNoImage = path.resolve(__dirname, '../../../assets/no-image.png');
-            res.sendFile(pathNoImage)
-        }
-    } else if (type === 'company') {
-
-        let pathImage = path.resolve(__dirname, `../../../assets/${type}/${fileName}`)
-        if (fs.existsSync(pathImage)) {
-            res.sendFile(pathImage)
-        } else {
-            let pathNoImage = path.resolve(__dirname, '../../../assets/no-image.png');
-            res.sendFile(pathNoImage)
-        }
-    }
-}
 
 
 /* ACCESO A LOS ARCHIVOS DEL BUCKET DE AMAZON S3*/
@@ -40,6 +15,28 @@ export const getAwsFile = (req:Request,res:Response)=>{
     let fileName = req.params.name;
     AWSCrud.getFile(fileName).then((file:any) => {
         res.send(file)
+    })
+}
+export const getTaskFiles = (req: Request, res: Response) => {
+    let id = new mongoose.Types.ObjectId(req.params.id);
+    let skip = Number(req.query.skip);
+    let limit = Number(req.query.limit);
+
+    let title = req.query.title ? new RegExp(req.query.title as string) : '';
+
+    let request = title ? Message.aggregate([{ $match: { task: id } }, { $match: { "files.title": { $regex: title, $options: 'i' } } }]).unwind('$files') : Message.aggregate([{ $match: { task: id } }]).unwind('$files')
+
+    request.skip(skip).limit(limit).exec((err, filesDb) => {
+        if (err) {
+            return res.status(500).json({ ok: false, err })
+        }
+        FileModel.find({ _id: filesDb.map((f) => { return f.files }) }, (err, files) => {
+            if (err) {
+                return res.status(500).json({ ok: false, err })
+            }
+            res.status(200).json({ ok: true, files })
+        })
+
     })
 }
 
@@ -81,10 +78,18 @@ export const postFile = (req: Request, res: Response)=>{
 }
 
 
-export const removeFile = (req: Request, res: Response)=>{
+export const deleteFile = (req: Request, res: Response)=>{
     let fileId = new mongoose.Types.ObjectId(req.params.fileId);
     AWSCrud.deleteFile(res, fileId ).then((fileDeleted) => {
-        res.status(200).json({ ok: true, file: fileDeleted })
+        Message.findOneAndDelete({files: { $in:[fileId]}},(err:any,messageDeleted:IMessage | null)=>{
+            if (err) {
+            return res.status(500).json({
+                        ok: false,
+                        err
+              })  
+            }
+            res.status(200).json({ ok: true, file: fileDeleted })   
+        })
     })
 }
 

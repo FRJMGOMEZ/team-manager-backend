@@ -3,17 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProject = exports.getParticipants = exports.putProject = exports.postProject = exports.getProjectById = exports.getProjects = void 0;
+exports.setPrevState = exports.deleteProject = exports.getParticipants = exports.putProject = exports.postProject = exports.getProjectById = exports.getProjects = void 0;
 const project_model_1 = __importDefault(require("../../models/project.model"));
 const user_model_1 = __importDefault(require("../../models/user.model"));
-const aws_bucket_1 = require("../../services/aws-bucket");
 const task_model_1 = __importDefault(require("../../models/task.model"));
 const socket_users_list_1 = require("../../sockets-config/socket-users-list");
-const AWSCrud = aws_bucket_1.AwsBucket.instance;
+const notification_model_1 = __importDefault(require("../../models/notification.model"));
+const notification_controller_1 = require("./notification-controller");
 const socketUsersList = socket_users_list_1.SocketUsersList.instance;
-const emitProjectChange = (userId, payload) => {
-    socketUsersList.emit(userId, payload, 'projects-change');
-};
 exports.getProjects = (req, res) => {
     let userOnline = req.body.userInToken;
     project_model_1.default.find({ participants: userOnline._id })
@@ -25,8 +22,7 @@ exports.getProjects = (req, res) => {
             return res.status(200).json({ ok: true, projects: [] });
         }
         projectsDb.forEach((eachProject) => {
-            if (eachProject.administrators.indexOf(userOnline._id) < 0 &&
-                eachProject.status === false) {
+            if (eachProject.administrators.indexOf(userOnline._id) < 0 && eachProject.status === false) {
                 projectsDb = projectsDb.filter((project) => { return project._id != eachProject._id; });
             }
         });
@@ -61,7 +57,9 @@ exports.postProject = (req, res) => {
         }
         res.status(200).json({ project: projectSaved });
         let user = req.body.userInToken;
-        emitProjectChange(user._id, { project: projectSaved, method: 'POST', user: user.name });
+        createNotification(res, { name: user.name, _id: user._id }, projectSaved, 'POST', projectSaved).then(() => {
+            broadcastProjectEvent(user._id, projectSaved, 'POST');
+        });
     });
 };
 exports.putProject = (req, res) => {
@@ -79,10 +77,15 @@ exports.putProject = (req, res) => {
         if (!projectDb) {
             return res.status(404).json({ ok: false, message: 'There are no projects with the ID provided' });
         }
-        body._id = projectDb._id;
-        res.status(200).json({ ok: true, project: body });
-        let user = req.body.userInToken;
-        emitProjectChange(user._id, { project: body, method: 'PUT', user: user.name, projectOld: projectDb });
+        project_model_1.default.findById(projectDb._id, (err, projectUpdated) => {
+            let user = req.body.userInToken;
+            exports.setPrevState(res, projectUpdated, projectDb, user).then((projectUpdated) => {
+                createNotification(res, { name: user.name, _id: user._id }, projectUpdated, 'PUT', projectDb).then(() => {
+                    broadcastProjectEvent(user._id, projectUpdated, 'PUT', projectDb);
+                    res.status(200).json({ ok: true, project: projectUpdated });
+                });
+            });
+        });
     });
 };
 exports.getParticipants = (req, res) => {
@@ -104,7 +107,6 @@ exports.deleteProject = (req, res) => {
     project_model_1.default.findByIdAndDelete(id)
         .exec((err, projectDeleted) => {
         if (err) {
-            console.log({ err });
             return res.status(500).json({ ok: false, err });
         }
         if (!projectDeleted) {
@@ -113,7 +115,9 @@ exports.deleteProject = (req, res) => {
         deleteTasks(projectDeleted._id, res).then(() => {
             res.status(200).json({ ok: true, project: projectDeleted });
             let user = req.body.userInToken;
-            emitProjectChange(user._id, { project: projectDeleted, method: 'DELETE', user: user.name });
+            createNotification(res, { name: user.name, _id: user._id }, projectDeleted, 'DELETE', projectDeleted).then(() => {
+                broadcastProjectEvent(user._id, projectDeleted, 'DELETE');
+            });
         });
     });
 };
@@ -124,7 +128,61 @@ const deleteTasks = (projectId, res) => {
             if (err) {
                 reject(res.status(500).json({ ok: false, err }));
             }
+            resolve('');
+        });
+    });
+};
+exports.setPrevState = (res, currentProject, prevProject, user) => {
+    return new Promise((resolve, reject) => {
+        let prevState = calculatePrevState(currentProject, prevProject, user);
+        project_model_1.default.findByIdAndUpdate(currentProject._id, { $push: { prevStates: prevState } }, { new: true })
+            .exec((err, projectUpdated) => {
+            if (err) {
+                reject(res.status(500).json({ ok: false, err }));
+            }
+            if (!projectUpdated) {
+                reject(res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' }));
+            }
+            resolve(projectUpdated);
+        });
+    });
+};
+const calculatePrevState = (currentProject, prevProject, user) => {
+    let prevState = { user: user._id };
+    Object.keys(currentProject._doc).forEach((key) => {
+        if (key === 'user') {
+            prevState[key] = { name: user.name, _id: user._id };
+        }
+        else {
+            if (key === 'participants') {
+                let participants = prevProject.get(key);
+                let participantsIds = participants.map((p) => { return (p._id).toString(); });
+                if (JSON.stringify(participantsIds) != JSON.stringify(currentProject[key])) {
+                    prevState[key] = participants.map((p) => { return { name: p.name, _id: p._id }; });
+                }
+            }
+            else {
+                if (prevProject.get(key) != currentProject.get(key)) {
+                    prevState[key] = prevProject.get(key);
+                }
+            }
+        }
+    });
+    return prevState;
+};
+const createNotification = (res, user, currentProject, method, prevProject) => {
+    return new Promise((resolve, reject) => {
+        const oldParticipants = currentProject ? currentProject.participants : [];
+        const recipients = [...currentProject.participants, ...oldParticipants].filter((eachParticipant) => { return eachParticipant.toString() != user._id.toString(); });
+        let notification = new notification_model_1.default({ project: currentProject._id, task: null, type: 'Project', modelName: 'Project', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p }; }), method: method, date: new Date().getTime(), item: currentProject._id, oldItem: { name: prevProject.name, _id: prevProject._id } });
+        notification_controller_1.postNotification(res, notification).then((notificationToSend) => {
+            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', [...recipients.map((p) => { return p.toString(); })]);
             resolve();
         });
     });
+};
+const broadcastProjectEvent = (userId, project, method, prevProject) => {
+    const oldParticipants = prevProject ? prevProject.participants : [];
+    const recipients = [...project.participants, ...oldParticipants].filter((eachParticipant) => { return eachParticipant.toString() != userId.toString(); }).map((e) => { return e.toString(); });
+    socketUsersList.broadcastToGroup(userId, { project, method }, 'projects-events', recipients);
 };

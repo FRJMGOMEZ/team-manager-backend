@@ -1,23 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -31,42 +12,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeFile = exports.postFile = exports.getAwsFile = exports.getBackFile = void 0;
-const path = __importStar(require("path"));
-const fs = __importStar(require("fs"));
+exports.deleteFile = exports.postFile = exports.getTaskFiles = exports.getAwsFile = void 0;
 const file_model_1 = __importDefault(require("../../models/file.model"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const aws_bucket_1 = require("../../services/aws-bucket");
+const message_model_1 = __importDefault(require("../../models/message.model"));
 const AWSCrud = aws_bucket_1.AwsBucket.instance;
-exports.getBackFile = (req, res) => {
-    let type = req.params.type;
-    let fileName = req.params.fileName;
-    if (type === 'icons') {
-        let pathImage = path.resolve(__dirname, `../../../assets/${type}/${fileName}`);
-        if (fs.existsSync(pathImage)) {
-            res.sendFile(pathImage);
-        }
-        else {
-            let pathNoImage = path.resolve(__dirname, '../../../assets/no-image.png');
-            res.sendFile(pathNoImage);
-        }
-    }
-    else if (type === 'company') {
-        let pathImage = path.resolve(__dirname, `../../../assets/${type}/${fileName}`);
-        if (fs.existsSync(pathImage)) {
-            res.sendFile(pathImage);
-        }
-        else {
-            let pathNoImage = path.resolve(__dirname, '../../../assets/no-image.png');
-            res.sendFile(pathNoImage);
-        }
-    }
-};
 /* ACCESO A LOS ARCHIVOS DEL BUCKET DE AMAZON S3*/
 exports.getAwsFile = (req, res) => {
     let fileName = req.params.name;
     AWSCrud.getFile(fileName).then((file) => {
         res.send(file);
+    });
+};
+exports.getTaskFiles = (req, res) => {
+    let id = new mongoose_1.default.Types.ObjectId(req.params.id);
+    let skip = Number(req.query.skip);
+    let limit = Number(req.query.limit);
+    let title = req.query.title ? new RegExp(req.query.title) : '';
+    let request = title ? message_model_1.default.aggregate([{ $match: { task: id } }, { $match: { "files.title": { $regex: title, $options: 'i' } } }]).unwind('$files') : message_model_1.default.aggregate([{ $match: { task: id } }]).unwind('$files');
+    request.skip(skip).limit(limit).exec((err, filesDb) => {
+        if (err) {
+            return res.status(500).json({ ok: false, err });
+        }
+        file_model_1.default.find({ _id: filesDb.map((f) => { return f.files; }) }, (err, files) => {
+            if (err) {
+                return res.status(500).json({ ok: false, err });
+            }
+            res.status(200).json({ ok: true, files });
+        });
     });
 };
 /* POSTEO DE ARCHIVOS */
@@ -102,9 +76,17 @@ exports.postFile = (req, res) => {
         });
     }));
 };
-exports.removeFile = (req, res) => {
+exports.deleteFile = (req, res) => {
     let fileId = new mongoose_1.default.Types.ObjectId(req.params.fileId);
     AWSCrud.deleteFile(res, fileId).then((fileDeleted) => {
-        res.status(200).json({ ok: true, file: fileDeleted });
+        message_model_1.default.findOneAndDelete({ files: { $in: [fileId] } }, (err, messageDeleted) => {
+            if (err) {
+                return res.status(500).json({
+                    ok: false,
+                    err
+                });
+            }
+            res.status(200).json({ ok: true, file: fileDeleted });
+        });
     });
 };
