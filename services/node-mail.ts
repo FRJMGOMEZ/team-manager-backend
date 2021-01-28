@@ -22,7 +22,7 @@ class Mail {
                 }]
             };
             mailjet.connect(process.env.MAILJETUSER, process.env.MAILJETPASSWORD).post('send', { 'version': 'v3.1' }).request(requestObject).then(() => {
-                resolve()
+                resolve(true)
             }).catch((err) => {
                 reject(err)
             })

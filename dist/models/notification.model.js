@@ -21,14 +21,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const notificationSchema = new mongoose_1.Schema({
+    project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project', required: true },
+    task: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Task' },
     type: { type: String, required: true },
+    modelName: { type: String, required: true },
     userFrom: { type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' },
-    usersTo: [{ type: mongoose_1.default.Schema.Types.ObjectId, required: true, ref: 'User' }],
+    usersTo: { type: [{ checked: Boolean, user: mongoose_1.default.Schema.Types.ObjectId }] },
     method: { type: String, required: true },
-    checked: { type: Boolean, default: false },
     date: { type: Number, default: new Date().getTime() },
     item: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'type' },
-    oldItem: { type: { id: String, name: String, participants: [mongoose_1.default.Schema.Types.ObjectId] } }
+    oldItem: { type: Object }
 });
 const Notification = mongoose_1.default.model('Notification', notificationSchema);
 exports.default = Notification;

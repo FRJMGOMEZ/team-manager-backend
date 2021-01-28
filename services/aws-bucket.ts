@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 export class AwsBucket {
 
     public static _instance: AwsBucket;
-    s3:any
+    s3:AWS.S3
     validMIMETypes = [
         'text/plain',
         'image/gif',
@@ -97,7 +97,7 @@ export class AwsBucket {
                 if (err) {
                     reject(res.status(500).json({ ok: false, err }))
                 } else {
-                    resolve()
+                    resolve(fileDeleted)
                 }
             });
         })

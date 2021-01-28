@@ -26,12 +26,19 @@ class SocketUsersList {
         user.rooms = user.rooms.filter((r) => { return r != room; });
     }
     getUsersInRoom(room) {
-        console.log(this.users);
         return this.users.filter((u) => { return u.rooms.includes(room); }).map((u) => { return u.userId; });
     }
     broadcast(userId, payload, eventName, roomId) {
         const user = this.users.filter((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); })[0];
         user.client.broadcast.to(roomId).emit(eventName, payload);
+    }
+    broadcastToGroup(userId, payload, eventName, group) {
+        const user = this.users.filter((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); })[0];
+        const usersTo = this.users.filter((user) => { return user.userId && group.includes(user.userId); }).map((u) => { return u.client.id; });
+        console.log({ usersTo });
+        usersTo.forEach((clientId) => {
+            user.client.broadcast.to(clientId).emit(eventName, payload);
+        });
     }
     //// EMIT THE EVENT TO ALL THE USERS CONNECTED ///
     emit(userId, payload, eventName) {
