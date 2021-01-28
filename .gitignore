@@ -1,5 +1,6 @@
 
 node_modules
-
-global/aws.ts
+global/aws-key.ts
 global/mailjet.ts
+dist
+
