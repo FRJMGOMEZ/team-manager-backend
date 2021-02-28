@@ -33,11 +33,11 @@ class SocketUsersList {
         user.client.broadcast.to(roomId).emit(eventName, payload);
     }
     broadcastToGroup(userId, payload, eventName, group) {
-        const user = this.users.filter((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); })[0];
+        const user = this.users.find((user) => { var _a; return ((_a = user.userId) === null || _a === void 0 ? void 0 : _a.toString()) === userId.toString(); });
         const usersTo = this.users.filter((user) => { return user.userId && group.includes(user.userId); }).map((u) => { return u.client.id; });
-        console.log({ usersTo });
+        user === null || user === void 0 ? void 0 : user.client.emit(eventName, payload);
         usersTo.forEach((clientId) => {
-            user.client.broadcast.to(clientId).emit(eventName, payload);
+            user === null || user === void 0 ? void 0 : user.client.broadcast.to(clientId).emit(eventName, payload);
         });
     }
     //// EMIT THE EVENT TO ALL THE USERS CONNECTED ///

@@ -25,19 +25,22 @@ const taskSchema = new mongoose_1.Schema({
     name: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     user: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
+        type: mongoose_1.default.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true }],
+    participants: [{ type: mongoose_1.default.Types.ObjectId, ref: 'User', required: true }],
+    reviewers: [{ type: mongoose_1.default.Types.ObjectId, ref: 'User' }],
+    project: { type: mongoose_1.default.Types.ObjectId, ref: 'Project', required: true },
     priority: { type: Number, required: true },
     status: { type: String, default: 'pending' },
     startDate: { type: Number, required: true },
     endDate: { type: Number, required: true },
     deliverDate: { type: Number },
+    validationTime: { type: Number },
     extraTime: { type: Number },
-    prevStates: [{ type: Object }],
-    project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project', required: true },
+    prevStates: [{ user: { name: String, _id: String }, date: Number, changes: Object }],
+    actionsRequired: [{ type: mongoose_1.default.Types.ObjectId, ref: 'ActionRequired' }],
 });
 taskSchema.plugin(uniqueValidator);
 const Task = mongoose_1.default.model('Task', taskSchema);

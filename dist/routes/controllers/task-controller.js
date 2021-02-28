@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setPrevState = exports.deleteTask = exports.switchTaskStatus = exports.putTask = exports.getTaskById = exports.getTasks = exports.postTask = void 0;
+exports.setPrevState = exports.deleteTask = exports.putTask = exports.getTaskById = exports.getTasks = exports.postTask = void 0;
 const socket_users_list_1 = require("../../sockets-config/socket-users-list");
 const notification_model_1 = __importDefault(require("../../models/notification.model"));
 const task_model_1 = __importDefault(require("../../models/task.model"));
@@ -11,6 +11,9 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const mongoose_2 = __importDefault(require("mongoose"));
 const message_model_1 = __importDefault(require("../../models/message.model"));
 const notification_controller_1 = require("./notification-controller");
+const actions_required_controller_1 = require("./actions-required.controller");
+const ACTIONS_REQUIRED_PROPERTIES = ['status'];
+const PREV_VERSION_SKIP_PROPERTIES = ['actionsRequired', '_id'];
 const socketUsersList = socket_users_list_1.SocketUsersList.instance;
 exports.postTask = (req, res) => {
     let body = req.body;
@@ -19,6 +22,7 @@ exports.postTask = (req, res) => {
         description: body.description,
         user: body.userInToken._id,
         participants: body.participants,
+        reviewers: body.reviewers,
         project: body.project ? body.project : null,
         startDate: body.startDate,
         endDate: body.endDate,
@@ -29,11 +33,10 @@ exports.postTask = (req, res) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
         }
-        taskSaved.populate({
-            path: 'participants',
-            model: 'User',
-            select: 'name _id'
-        })
+        taskSaved
+            .populate({ path: 'participants', model: 'User', select: 'name _id' })
+            .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+            .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
             .execPopulate().then((taskSaved) => {
             let user = req.body.userInToken;
             createNotification(res, user, taskSaved, 'POST', taskSaved).then(() => {
@@ -78,6 +81,8 @@ exports.getTaskById = (req, res) => {
         .populate({ path: 'user', model: 'User', select: 'name _id' })
         .populate({ path: 'project', model: 'Project', select: 'name _id' })
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
+        .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+        .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
         .exec((err, taskDb) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
@@ -89,11 +94,13 @@ exports.getTaskById = (req, res) => {
     });
 };
 exports.putTask = (req, res) => {
-    let body = req.body;
+    let changes = req.body.changes;
     let id = req.params.id;
     task_model_1.default.findById(id)
         .populate({ path: 'project', model: 'Project', select: 'name _id' })
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
+        .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+        .populate({ path: 'actionsRequired', model: 'ActionRequired', select: 'property' })
         .exec((err, taskDb) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
@@ -101,96 +108,89 @@ exports.putTask = (req, res) => {
         if (!taskDb) {
             return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' });
         }
-        task_model_1.default.findByIdAndUpdate(id, Object.assign({}, body), { new: true })
-            .populate({ path: 'project', model: 'Project', select: 'name _id' })
-            .populate({ path: 'participants', model: 'User', select: 'name _id' })
-            .exec((err, taskUpdated) => {
-            if (err) {
-                return res.status(500).json({ ok: false, err });
+        const taskPrev = JSON.parse(JSON.stringify(taskDb._doc));
+        const actionsRequiredOperations = [];
+        Object.keys(changes).forEach((k) => {
+            if (ACTIONS_REQUIRED_PROPERTIES.includes(k)) {
+                switch (k) {
+                    case 'status':
+                        actionsRequiredOperations.push(setStatusChange(res, taskDb, changes.status, req.body.userInToken));
+                        break;
+                }
             }
-            if (!taskUpdated) {
-                return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' });
+            else {
+                taskDb.set(k, changes[k]);
             }
-            let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
-            exports.setPrevState(res, taskUpdated, taskDb, user).then((taskUpdated) => {
-                createNotification(res, user, taskUpdated, 'PUT', taskDb).then(() => {
-                    broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskDb);
-                    res.status(200).json({ ok: true, task: taskUpdated });
+        });
+        Promise.all(actionsRequiredOperations).then((response) => {
+            if (response.length) {
+                taskDb = response[response.length - 1];
+            }
+            taskDb.save((err, taskDbUpdated) => {
+                if (err) {
+                    return res.status(500).json({ ok: false, err });
+                }
+                taskDbUpdated
+                    .populate({ path: 'participants', model: 'User', select: 'name _id' })
+                    .populate({ path: 'project', model: 'Project', select: 'name _id' })
+                    .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+                    .execPopulate().then((taskPopulated) => {
+                    let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
+                    exports.setPrevState(res, taskPopulated, taskPrev, user).then((taskUpdated) => {
+                        createNotification(res, user, taskUpdated, 'PUT', taskDb, actionsRequiredOperations.length > 0 ? taskDb.actionsRequired.map((ar) => ar._id) : []).then(() => {
+                            broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskDb);
+                            res.status(200).json({ ok: true, task: taskUpdated });
+                        });
+                    });
+                }).catch((err) => {
+                    res.status(500).json({ ok: false, err });
                 });
             });
         });
     });
 };
-exports.switchTaskStatus = (req, res) => {
-    const taskId = req.body.taskId;
-    const newStatus = req.body.newStatus;
-    const frontTime = req.body.frontTime;
-    task_model_1.default.findById(taskId)
-        .populate({
-        path: 'participants',
-        model: 'User',
-        select: 'name _id'
-    })
-        .populate({ path: 'project', model: 'Project', select: 'name _id' })
-        .exec((err, taskDb) => {
-        if (err) {
-            return res.status(500).json({ ok: false, err });
-        }
-        if (!taskDb) {
-            return res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' });
-        }
+const setStatusChange = (res, taskDb, newStatus, user) => {
+    return new Promise((resolve, reject) => {
+        let actionRequiredProm = Promise.resolve(taskDb);
         switch (taskDb.status) {
             case 'pending':
                 taskDb.status = 'on review';
-                taskDb.deliverDate = frontTime;
+                taskDb.deliverDate = new Date().getTime();
+                actionRequiredProm = actions_required_controller_1.setActionRequired(res, taskDb, 'status', ['done', 'pending'], user, 'Task');
                 break;
             case 'on review':
                 if (newStatus === 'pending') {
                     taskDb.status = 'pending';
-                    taskDb.extraTime += frontTime - taskDb.deliverDate;
+                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
+                    taskDb.extraTime += new Date().getTime() - taskDb.deliverDate;
                     taskDb.deliverDate = 0;
                 }
                 else if (newStatus === 'done') {
                     taskDb.status = 'done';
-                    taskDb.validationTime = frontTime;
+                    taskDb.validationTime = new Date().getTime();
+                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
                     taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
                 }
+                actionRequiredProm = actions_required_controller_1.removeActionRequired(res, taskDb, 'status');
                 break;
             case 'done':
                 taskDb.status = 'pending';
-                taskDb.extraTime += frontTime - taskDb.validationTime;
+                taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
+                taskDb.extraTime += new Date().getTime() - taskDb.validationTime;
                 taskDb.validationTime = 0;
+                actionRequiredProm = Promise.resolve(taskDb);
                 break;
         }
-        taskDb.save((err, taskDbUpdated) => {
-            if (err) {
-                return res.status(500).json({ ok: false, err });
-            }
-            taskDbUpdated
-                .populate({ path: 'participants', model: 'User', select: 'name _id' })
-                .populate({ path: 'project', model: 'Project', select: 'name _id' })
-                .execPopulate().then((taskPopulated) => {
-                let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
-                exports.setPrevState(res, taskPopulated, taskDb, user).then((taskUpdated) => {
-                    createNotification(res, user, taskUpdated, 'STATUS CHANGE', taskDb).then(() => {
-                        broadcastTasksEvents(taskUpdated, user._id, 'STATUS CHANGE', taskDb);
-                        res.status(200).json({ ok: true, task: taskUpdated });
-                    });
-                });
-            }).catch((err) => {
-                res.status(500).json({ ok: false, err });
-            });
+        actionRequiredProm.then((taskDb) => {
+            resolve(taskDb);
         });
     });
 };
 exports.deleteTask = (req, res) => {
     let id = req.params.id;
     task_model_1.default.findByIdAndDelete(id)
-        .populate({
-        path: 'participants',
-        model: 'User',
-        select: 'name _id'
-    })
+        .populate({ path: 'participants', model: 'User', select: 'name _id' })
+        .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
         .exec((err, taskDeleted) => {
         if (err) {
             return res.status(500).json({ ok: false, err });
@@ -214,11 +214,9 @@ exports.setPrevState = (res, currentTask, prevTask, user) => {
     return new Promise((resolve, reject) => {
         let prevState = calculatePrevState(currentTask, prevTask, user);
         task_model_1.default.findByIdAndUpdate(currentTask._id, { $push: { prevStates: prevState } }, { new: true })
-            .populate({
-            path: 'participants',
-            model: 'User',
-            select: 'name _id'
-        })
+            .populate({ path: 'participants', model: 'User', select: 'name _id' })
+            .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+            .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
             .exec((err, taskUpdated) => {
             if (err) {
                 reject(res.status(500).json({ ok: false, err }));
@@ -231,42 +229,34 @@ exports.setPrevState = (res, currentTask, prevTask, user) => {
     });
 };
 const calculatePrevState = (currentTask, prevTask, user) => {
-    let prevState = { user: user._id };
+    let prevState = { user: { name: user.name, _id: user._id }, date: new Date().getTime(), changes: {} };
+    prevTask = prevTask['_doc'] ? prevTask['_doc'] : prevTask;
     Object.getOwnPropertyNames(currentTask._doc).forEach((key) => {
-        if (key === 'user') {
-            prevState[key] = { name: user.name, _id: user._id };
+        if ((key === 'participants' || key === 'reviewers') && (JSON.stringify(prevTask[key]) != JSON.stringify(currentTask.get(key)))) {
+            prevState.changes[key] = prevTask[key].map((u) => { return { _id: u._id, name: u.name }; });
         }
-        else {
-            if (key === 'participants') {
-                let participants = prevTask.get(key);
-                let participantsIds = participants.map((p) => { return (p._id).toString(); });
-                if (JSON.stringify(participantsIds) != JSON.stringify(currentTask.participants.map((p) => { return p._id; }))) {
-                    prevState.participants = participants.map((p) => { return { name: p.name, _id: p._id }; });
-                }
-            }
-            else {
-                if (typeof prevTask.get(key) != 'object' && prevTask.get(key) != currentTask.get(key)) {
-                    prevState[key] = prevTask.get(key);
-                }
+        else if (!PREV_VERSION_SKIP_PROPERTIES.includes(key)) {
+            if (JSON.stringify(prevTask[key]) != JSON.stringify(currentTask.get(key))) {
+                prevState.changes[key] = prevTask[key];
             }
         }
     });
-    console.log({ prevState });
     return prevState;
 };
-const createNotification = (res, user, task, method, prevTask) => {
+const createNotification = (res, user, task, method, prevTask, actionsRequired = []) => {
     return new Promise((resolve, reject) => {
         const oldParticipants = prevTask ? prevTask.participants : [];
-        const recipients = [...task.participants, ...oldParticipants].map((p) => { return p._id; }).filter((eachParticipant) => { return eachParticipant.toString() != user._id.toString(); });
-        let notification = new notification_model_1.default({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p }; }), method: method, date: new Date().getTime(), item: task._id, oldItem: { name: prevTask.name, _id: prevTask._id } });
+        let recipients = [...task.participants, ...oldParticipants].map((u) => { return u._id.toString(); }).filter((u) => { return u.toString() != user._id; });
+        recipients = [...new Set(recipients)];
+        let notification = new notification_model_1.default({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p }; }), method: method, date: new Date().getTime(), item: task._id, prevItem: { name: prevTask.name, _id: prevTask._id }, actionsRequired });
         notification_controller_1.postNotification(res, notification).then((notificationToSend) => {
-            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients.map((p) => { return p.toString(); }));
+            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients);
             resolve();
         });
     });
 };
 const broadcastTasksEvents = (task, userId, method, prevTask) => {
     const oldParticipants = prevTask ? prevTask.participants : [];
-    const recipients = [...task.participants, ...oldParticipants].map((p) => { return p._id; }).filter((eachParticipant) => { return eachParticipant.toString() != userId.toString(); });
+    const recipients = [...task.participants, ...oldParticipants].filter((eachParticipant) => { return eachParticipant._id.toString() != userId.toString(); }).map((u) => { return u._id; });
     socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event', recipients.map((p) => { return p.toString(); }));
 };

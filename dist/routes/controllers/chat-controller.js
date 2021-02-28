@@ -11,7 +11,7 @@ const socket_users_list_1 = require("../../sockets-config/socket-users-list");
 const awsBucket = aws_bucket_1.AwsBucket.instance;
 const socketUsersList = socket_users_list_1.SocketUsersList.instance;
 const broadcastMessage = (message) => {
-    socketUsersList.broadcast(message.user._id.toString(), message, 'message-in', message.task.toString());
+    socketUsersList.broadcast(message.user._id.toString(), message, 'message-in', message.task._id.toString());
 };
 exports.postMessage = (req, res) => {
     const files = req.files;
@@ -50,7 +50,6 @@ exports.postMessage = (req, res) => {
                 })
                     .populate({ path: 'task', model: 'Task', select: 'project' })
                     .populate('files').execPopulate().then((messagePopulated) => {
-                    let user = req.body.userInToken;
                     broadcastMessage(messagePopulated);
                     res.status(200).json({ ok: true, message: messagePopulated });
                 });
@@ -62,13 +61,13 @@ exports.getMessages = (req, res) => {
     const taskId = req.params.taskId;
     const skip = Number(req.headers.skip);
     const limit = Number(req.headers.limit);
-    console.log({ skip, limit });
     message_model_1.default.countDocuments({ task: taskId }, (err, count) => {
         if (err) {
+            console.log({ err });
             return res.status(500).json({ ok: false, err });
         }
-        message_model_1.default.find({ task: taskId })
-            .skip(count - limit - skip >= 0 ? count - limit - skip : 0)
+        message_model_1.default.find({ task: taskId }).sort({ _id: -1 })
+            .skip(skip)
             .limit(limit)
             .populate('user')
             .populate('files')

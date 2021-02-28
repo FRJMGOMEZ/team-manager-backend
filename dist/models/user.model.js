@@ -36,7 +36,7 @@ const userSchema = new mongoose_1.Schema({
         enum: validRoles
     },
     status: { type: Boolean, default: false },
-    img: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'FileModel' },
+    img: { type: mongoose_1.default.Types.ObjectId, ref: 'FileModel' },
     resetCode: { type: String }
 });
 userSchema.plugin(uniqueValidator);

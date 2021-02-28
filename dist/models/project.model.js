@@ -23,10 +23,11 @@ const mongoose_1 = __importStar(require("mongoose"));
 const uniqueValidator = require("mongoose-unique-validator");
 const projectSchema = new mongoose_1.Schema({
     name: { type: String, unique: true, required: [true, "Name is required"] },
-    participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', default: null }],
-    administrators: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', default: null }],
+    participants: [{ type: mongoose_1.default.Types.ObjectId, ref: 'User', default: null }],
+    administrators: [{ type: mongoose_1.default.Types.ObjectId, ref: 'User', default: null }],
     status: { type: Boolean, default: true },
-    prevStates: [{ type: Object }]
+    prevStates: [{ user: { name: String, _id: String }, date: Number, changes: Object }],
+    actionsRequired: [{ type: mongoose_1.default.Types.ObjectId, ref: 'ActionRequired' }],
 });
 projectSchema.plugin(uniqueValidator, { message: '{PATH} must be unique' });
 const Project = mongoose_1.default.model('Project', projectSchema);

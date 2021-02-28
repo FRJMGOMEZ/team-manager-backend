@@ -18,10 +18,7 @@ else {
 }
 ;
 process.env.URLDB = urlDataBase;
-////////////////  MAILJET KEYS ///////////
-process.env.MAILJETUSER = 'ae4f0c92e16903546d0e3e3af4441cf1';
-process.env.MAILJETPASSWORD = '20e1aef08ea2f7e92b5b2a1e849085be';
-//////////// AWS S3 CREDENTIALS //////////
-process.env.AWS_S3_BUCKET_NAME = 'team-manager90000';
-process.env.AWS_ACCESS_KEY_ID = "AKIAQ2AXEBQ4FJOUHY4E";
-process.env.AWS_SECRET_ACCESS_KEY = "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";
+if (process.env.NODE_ENV === 'developing') {
+    require('./aws');
+    require('./mailjet');
+}

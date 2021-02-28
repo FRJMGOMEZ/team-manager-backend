@@ -36,20 +36,20 @@ exports.router.get('/task-files/:id', auth_1.verifyToken, files_controller_1.get
 exports.router.get('/projects', auth_1.verifyToken, projects_controller_1.getProjects);
 exports.router.get('/project/:id', auth_1.verifyToken, projects_controller_1.getProjectById);
 exports.router.post('/project', auth_1.verifyToken, projects_controller_1.postProject);
-exports.router.put('/project', auth_1.verifyToken, projects_controller_1.putProject);
+exports.router.put('/project/:id', auth_1.verifyToken, projects_controller_1.putProject);
 exports.router.delete('/project/:id', [demo_1.checkDemo, auth_1.verifyToken], projects_controller_1.deleteProject);
 exports.router.get('/get-participants/:id', auth_1.verifyToken, projects_controller_1.getParticipants);
 ///// NOTIFICATIONS /////
 exports.router.patch('/toggle-notification', auth_1.verifyToken, notification_controller_1.toggleNotification);
-exports.router.get('/notifications/:userId', auth_1.verifyToken, notification_controller_1.getNotifications);
+exports.router.get('/notifications', auth_1.verifyToken, notification_controller_1.getNotifications);
 exports.router.get('/notification/:id', auth_1.verifyToken, notification_controller_1.getNotificationById);
+exports.router.put('/notification/:id', auth_1.verifyToken, notification_controller_1.putNotification);
 ///// TASKS /////
 exports.router.post('/task', auth_1.verifyToken, task_controller_1.postTask);
 exports.router.get('/tasks/:selector', auth_1.verifyToken, task_controller_1.getTasks);
 exports.router.get('/task-by-id/:id', auth_1.verifyToken, task_controller_1.getTaskById);
 exports.router.patch('/task/:id', auth_1.verifyToken, task_controller_1.putTask);
 exports.router.delete('/task/:id', auth_1.verifyToken, task_controller_1.deleteTask);
-exports.router.put('/task-status', auth_1.verifyToken, task_controller_1.switchTaskStatus);
 //// MESSAGES /////
 exports.router.post('/message/:taskId', auth_1.verifyToken, chat_controller_1.postMessage);
 exports.router.get('/messages/:taskId', auth_1.verifyToken, chat_controller_1.getMessages);
