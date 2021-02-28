@@ -36,11 +36,11 @@ export class SocketUsersList{
     }
 
     broadcastToGroup(userId:string,payload:any,eventName:string,group:string[]){
-        const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];
-        const usersTo = this.users.filter((user)=>{ return user.userId && group.includes(user.userId)}).map((u)=>{ return u.client.id})
-        console.log({usersTo})
+        const user = this.users.find((user) => { return user.userId?.toString() === userId.toString() });
+        const usersTo = this.users.filter((user)=>{ return user.userId && group.includes(user.userId)}).map((u)=>{ return u.client.id});
+        user?.client.emit(eventName, payload);
         usersTo.forEach((clientId)=>{
-            user.client.broadcast.to(clientId).emit(eventName,payload);
+            user?.client.broadcast.to(clientId).emit(eventName,payload);
         })
     }  
     

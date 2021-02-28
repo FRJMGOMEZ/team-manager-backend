@@ -1,6 +1,7 @@
 
 
 export class OOUtils {
+
     public static copyObject(object: any) {
         return JSON.parse(JSON.stringify(object));
     }

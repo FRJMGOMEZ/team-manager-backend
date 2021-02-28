@@ -10,9 +10,15 @@ import mongoose from 'mongoose';
 import  ObjectId from 'mongoose'
 import Message from '../../models/message.model';
 import { postNotification} from './notification-controller';
+import { PrevState } from '../../models/prev-state';
+import { setActionRequired, removeActionRequired } from './actions-required.controller';
+import ActionRequired from '../../models/action-required.model';
+
+
+const ACTIONS_REQUIRED_PROPERTIES = ['status'];
+const PREV_VERSION_SKIP_PROPERTIES = ['actionsRequired','_id']
 
 const socketUsersList = SocketUsersList.instance;
-
 export const postTask = (req: Request, res: Response) => {
     let body = req.body;
     let task = new Task({
@@ -20,6 +26,7 @@ export const postTask = (req: Request, res: Response) => {
         description: body.description,
         user: body.userInToken._id,
         participants: body.participants,
+        reviewers:body.reviewers,
         project: body.project ? body.project : null,
         startDate: body.startDate,
         endDate: body.endDate,
@@ -30,11 +37,10 @@ export const postTask = (req: Request, res: Response) => {
         if (err) {
             return res.status(500).json({ ok: false, err })
         }
-        taskSaved.populate({
-            path: 'participants',
-            model: 'User',
-            select: 'name _id'
-        })
+        taskSaved
+        .populate({path: 'participants',model: 'User',select: 'name _id'})
+        .populate({path: 'reviewers',model: 'User',select: 'name _id'})
+        .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
         .execPopulate().then((taskSaved)=>{
             let user: IUser = req.body.userInToken;
             createNotification(res, user, taskSaved, 'POST',taskSaved).then(() => {
@@ -85,6 +91,8 @@ export const getTaskById = (req: Request, res: Response) => {
         .populate({ path: 'user', model: 'User', select: 'name _id' })
         .populate({ path: 'project', model: 'Project', select: 'name _id' })
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
+        .populate({path: 'reviewers',model: 'User',select: 'name _id'})
+        .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
         .exec((err, taskDb) => {
             if (err) {
                 return res.status(500).json({ ok: false, err })
@@ -98,101 +106,97 @@ export const getTaskById = (req: Request, res: Response) => {
 
 export const putTask = (req: Request, res: Response) => {
 
-    let body = req.body;
+    let changes = req.body.changes;
     let id = req.params.id;
 
     Task.findById(id)
      .populate({ path: 'project', model: 'Project', select: 'name _id' })
      .populate({ path: 'participants', model: 'User', select: 'name _id' })
+     .populate({path: 'reviewers',model: 'User',select: 'name _id'})
+     .populate({ path: 'actionsRequired', model: 'ActionRequired',select:'property'})
      .exec((err, taskDb: ITask)=>{
         if (err) {
             return res.status(500).json({ ok: false, err })
         }
         if (!taskDb) {
             return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' })
-        }  
-         Task.findByIdAndUpdate(id, { ...body }, { new: true })
-            .populate({path: 'project', model: 'Project',select: 'name _id'})
-            .populate({path:'participants',model:'User',select:'name _id'})
-            .exec((err, taskUpdated:ITask) => {
-                if (err) {
-                    return res.status(500).json({ ok: false, err })
-                }
-                if (!taskUpdated) {
-                    return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' })
-                }
-                let user = {name:req.body.userInToken.name,_id:req.body.userInToken._id}
-                setPrevState(res,taskUpdated,taskDb,user).then((taskUpdated:ITask)=>{
-                    createNotification(res, user, taskUpdated, 'PUT', taskDb).then(() => {
-                        broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskDb)
-                        res.status(200).json({ ok: true, task: taskUpdated })
-                    })
-                })    
-            })      
-    })
-}
+        }
+         const taskPrev: ITask = JSON.parse(JSON.stringify((taskDb as any)._doc));
+         const actionsRequiredOperations:Promise<any>[]= [];
+         Object.keys(changes).forEach((k: string) => {
+             if (ACTIONS_REQUIRED_PROPERTIES.includes(k)){
+                 switch(k){
+                     case 'status': actionsRequiredOperations.push(setStatusChange(res, taskDb, changes.status, req.body.userInToken));
+                     break;
+                 }
+             }else{
+                 taskDb.set(k, changes[k]);
+             }
+         });
+         Promise.all(actionsRequiredOperations).then((response:ITask[])=>{
+             if(response.length){
+                 taskDb = response[response.length-1];
+             }
+             taskDb.save((err:any, taskDbUpdated: ITask) => {
+                 if (err) {
+                     return res.status(500).json({ ok: false, err });
+                 }
+                 taskDbUpdated
+                     .populate({ path: 'participants', model: 'User', select: 'name _id' })
+                     .populate({ path: 'project', model: 'Project', select: 'name _id' })
+                     .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+                     .execPopulate().then((taskPopulated) => {
+                         let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
+                         setPrevState(res, taskPopulated, taskPrev, user).then((taskUpdated: ITask) => {
+                             createNotification(res, user, taskUpdated, 'PUT', taskDb, actionsRequiredOperations.length > 0 ? (taskDb.actionsRequired as any).map((ar:any)=>ar._id):[]).then(() => {
+                                 broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskDb);
+                                 res.status(200).json({ ok: true, task: taskUpdated });
+                             })
+                         })
+                     }).catch((err) => {
+                         res.status(500).json({ ok: false, err })
+                     });
+             });
 
-export const switchTaskStatus = (req: Request, res: Response) => {
-    const taskId = req.body.taskId;
-    const newStatus = req.body.newStatus;
-    const frontTime = req.body.frontTime;
-    
-    Task.findById(taskId)
-        .populate({
-            path: 'participants',
-            model: 'User',
-            select: 'name _id'
+         })    
+    });
+};
+
+const setStatusChange = (res:Response,taskDb:ITask,newStatus:string,user:IUser)=>{
+    return new Promise((resolve,reject)=>{
+        let actionRequiredProm:Promise<any> = Promise.resolve(taskDb);
+        switch (taskDb.status) {
+            case 'pending':
+                taskDb.status = 'on review';
+                taskDb.deliverDate = new Date().getTime();
+                actionRequiredProm = setActionRequired(res, taskDb,'status', ['done', 'pending'],user,'Task');
+                break;
+            case 'on review':
+                if (newStatus === 'pending') {
+                    taskDb.status = 'pending';
+                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
+                    taskDb.extraTime += new Date().getTime() - taskDb.deliverDate;
+                    taskDb.deliverDate = 0;
+                } else if (newStatus === 'done') {
+                    taskDb.status = 'done';
+                    taskDb.validationTime = new Date().getTime();
+                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
+                    taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
+                }
+                actionRequiredProm = removeActionRequired(res,taskDb, 'status')
+                break;
+            case 'done':
+                taskDb.status = 'pending';
+                taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
+                taskDb.extraTime += new Date().getTime() - taskDb.validationTime;
+                taskDb.validationTime = 0;
+                actionRequiredProm = Promise.resolve(taskDb);
+                break;
+        } 
+          actionRequiredProm.then((taskDb)=>{
+                 resolve(taskDb);
         })
-        .populate({ path: 'project', model: 'Project', select: 'name _id' })
-        .exec((err, taskDb)=>{
-        if (err) {
-            return res.status(500).json({ ok: false, err })
-        }
-        if (!taskDb) {
-            return res.status(404).json({ ok: false, message: 'There are no tasks with the ID provided' })
-        }
-    switch(taskDb.status){
-    case 'pending':
-     taskDb.status = 'on review';
-     taskDb.deliverDate = frontTime;
-    break;
-    case 'on review':
-    if(newStatus === 'pending'){
-     taskDb.status = 'pending';
-        taskDb.extraTime += frontTime- taskDb.deliverDate;
-     taskDb.deliverDate = 0;
-    }else if(newStatus === 'done'){
-    taskDb.status = 'done';
-        taskDb.validationTime = frontTime;
-    taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
-    }
-    break;
-    case 'done':
-     taskDb.status = 'pending';
-     taskDb.extraTime += frontTime - taskDb.validationTime;
-     taskDb.validationTime = 0;
-    break; 
-    }
-    taskDb.save((err,taskDbUpdated:ITask)=>{
-        if (err) {
-            return res.status(500).json({ ok: false, err })
-        }
-        taskDbUpdated
-        .populate({path: 'participants',model: 'User',select: 'name _id'})
-        .populate({ path: 'project', model: 'Project', select: 'name _id' })
-        .execPopulate().then((taskPopulated)=>{
-            let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id }
-            setPrevState(res,taskPopulated,taskDb,user).then((taskUpdated:ITask)=>{
-                createNotification(res, user, taskUpdated, 'STATUS CHANGE', taskDb).then(() => {
-                    broadcastTasksEvents(taskUpdated, user._id, 'STATUS CHANGE', taskDb)
-                    res.status(200).json({ ok: true, task: taskUpdated })
-                })
-            })
-        }).catch((err)=>{
-            res.status(500).json({ok:false,err})
-        });
     })
-  })   
 }
 
 export const deleteTask = (req: Request, res: Response) => {
@@ -200,11 +204,8 @@ export const deleteTask = (req: Request, res: Response) => {
     let id = req.params.id;
 
     Task.findByIdAndDelete(id)
-        .populate({
-            path: 'participants',
-            model: 'User',
-            select: 'name _id'
-        })
+        .populate({path: 'participants',model: 'User',select: 'name _id'})
+        .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
         .exec((err, taskDeleted) => {
             if (err) {
                 return res.status(500).json({ ok: false, err })
@@ -212,30 +213,26 @@ export const deleteTask = (req: Request, res: Response) => {
             if (!taskDeleted) {
                 return res.status(404).json({ ok: true, message: 'No task has been found with the ID provided' })
             }
-            Message.deleteMany({ task: taskDeleted._id }).exec((err,messagesDeleted)=>{
+            Message.deleteMany({ task: taskDeleted._id as mongoose.Types.ObjectId }).exec((err,messagesDeleted)=>{
                 if (err) {
                     return res.status(500).json({ ok: false, err })
                 }
                 let user: IUser = req.body.userInToken;
                 createNotification(res,user, taskDeleted, 'DELETE',taskDeleted).then(() => {
                     broadcastTasksEvents(taskDeleted, user._id, 'DELETE', taskDeleted)
-                    res.status(200).json({ ok: true, task: taskDeleted }) 
-                })
-            })
-        })
+                    res.status(200).json({ ok: true, task: taskDeleted }) ;
+                });
+            });
+        });
 }
-
 
 export const setPrevState = (res: Response, currentTask: any, prevTask: ITask, user: any) => {
     return new Promise<ITask>((resolve, reject) => {
-
-        let prevState: { [key: string]: any } = calculatePrevState(currentTask, prevTask, user);
+        let prevState: PrevState = calculatePrevState(currentTask, prevTask, user);
         Task.findByIdAndUpdate(currentTask._id, { $push: { prevStates: prevState } }, { new: true })
-            .populate({
-                path: 'participants',
-                model: 'User',
-                select: 'name _id'
-            })
+            .populate({path: 'participants',model: 'User',select: 'name _id'})
+            .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+            .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
             .exec((err: Error, taskUpdated: ITask) => {
                 if (err) {
                     reject(res.status(500).json({ ok: false, err }))
@@ -248,36 +245,27 @@ export const setPrevState = (res: Response, currentTask: any, prevTask: ITask, u
     })
 }
 
-const calculatePrevState = (currentTask:any, prevTask: ITask, user: any) => {
-    let prevState: { [key: string]: any } = { user: user._id }
+const calculatePrevState = (currentTask:any, prevTask: any, user: any):PrevState => {
+    let prevState: PrevState = { user:{name: user.name,_id:user._id },date:new Date().getTime(),changes:{}}
+    prevTask = prevTask['_doc'] ? prevTask['_doc'] : prevTask;
     Object.getOwnPropertyNames(currentTask._doc).forEach((key: string) => {
-        if (key === 'user') {
-            prevState[key] = { name: user.name, _id: user._id }
-        } else {
-            if (key === 'participants') {
-                let participants = prevTask.get(key);
-                let participantsIds = participants.map((p: any) => { return (p._id).toString() })
-                if (JSON.stringify(participantsIds) != JSON.stringify((currentTask.participants as IUser[]).map((p)=>{ return p._id}))) {
-                    prevState.participants = participants.map((p: any) => { return { name: p.name, _id: p._id } })
-                }
-            } else {
-                if ( typeof prevTask.get(key) != 'object' && prevTask.get(key) != currentTask.get(key)) {
-                    prevState[key] = prevTask.get(key)
-                }
-            }
+        if ((key === 'participants' || key === 'reviewers') && (JSON.stringify(prevTask[key]) != JSON.stringify(currentTask.get(key)))) {
+            prevState.changes[key] = (prevTask[key]  as any).map((u: any) => { return { _id: u._id, name: u.name } })
+        } else if (!PREV_VERSION_SKIP_PROPERTIES.includes(key)) {
+            if (JSON.stringify(prevTask[key]) != JSON.stringify(currentTask.get(key))) { prevState.changes[key] = prevTask[key] }
         }
-    })
-    console.log({prevState})
+    });
     return prevState;
 }
 
-const createNotification = (res: Response, user: { name: string, _id: string }, task: ITask, method: string, prevTask: ITask) => {
+const createNotification = (res: Response, user: { name: string, _id: string }, task: ITask, method: string, prevTask: ITask,actionsRequired:any=[]) => {
     return new Promise<void>((resolve, reject) => {
         const oldParticipants = prevTask ? prevTask.participants : [];
-        const recipients = [...task.participants, ...oldParticipants].map((p) => { return (p as IUser)._id }).filter((eachParticipant) => { return eachParticipant.toString() != user._id.toString() })
-        let notification = new Notification({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: task._id, oldItem: {name:prevTask.name,_id:prevTask._id} })
+        let recipients = [...task.participants, ...oldParticipants].map((u)=>{  return (u as IUser)._id.toString()}).filter((u)=>{ return u.toString() != user._id});
+        recipients = [...new Set(recipients)];
+        let notification = new Notification({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: task._id, prevItem: {name:prevTask.name,_id:prevTask._id},actionsRequired})
         postNotification(res, notification).then((notificationToSend: INotification) => {
-            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients.map((p) => { return p.toString() }))
+            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients)
             resolve();
         })
     })
@@ -285,7 +273,7 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
 
 const broadcastTasksEvents = (task: ITask, userId: string, method: string, prevTask?: ITask) => {
     const oldParticipants = prevTask ? prevTask.participants : [];
-    const recipients = [...task.participants, ...oldParticipants].map((p) => { return (p as IUser)._id }).filter((eachParticipant) => { return eachParticipant.toString() != userId.toString() })
-    socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event', recipients.map((p) => { return p.toString() }))
+    const recipients = [...task.participants, ...oldParticipants].filter((eachParticipant) => { return (eachParticipant as IUser)._id.toString() != userId.toString() }).map((u) => { return (u as IUser)._id })
+    socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event',recipients.map((p) => { return p.toString() }))
 }
 

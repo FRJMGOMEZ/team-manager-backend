@@ -30,7 +30,7 @@ const userSchema = new Schema({
         enum: validRoles
     },
     status: { type: Boolean, default: false },
-    img: { type: mongoose.Schema.Types.ObjectId, ref: 'FileModel' },
+    img: { type: mongoose.Types.ObjectId, ref: 'FileModel' },
     resetCode: { type: String }
 });
 
