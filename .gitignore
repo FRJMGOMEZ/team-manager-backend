@@ -3,3 +3,5 @@ node_modules
 
 global/aws.ts
 global/mailjet.ts
+
+dist
