@@ -10,6 +10,7 @@ import uniqueValidator = require("mongoose-unique-validator");
 export interface IProject extends Document {
 
     name:string,
+    createdBy: mongoose.Types.ObjectId,
     participants: mongoose.Types.ObjectId[] | IUser[],
     administrators: mongoose.Types.ObjectId[] | IUser[],
     status:boolean,
@@ -20,6 +21,7 @@ export interface IProject extends Document {
 
 const projectSchema = new Schema({
     name: { type: String, unique: true, required: [true, "Name is required"] },
+    createdBy: { type: mongoose.Types.ObjectId, ref: 'User', required:true },
     participants: [{ type: mongoose.Types.ObjectId, ref: 'User', default: null }],
     administrators: [{ type: mongoose.Types.ObjectId, ref: 'User', default: null }],
     status: { type: Boolean, default: true },

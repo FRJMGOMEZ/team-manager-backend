@@ -4,13 +4,16 @@ import User from '../../models/user.model';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { IUser } from '../../models/user.model';
+import UsersOnline from '../../models/users-online';
+import mongoose from 'mongoose';
+
 var atob = require('atob');
 
 export const login = (req: Request, res: Response)=>{
     let credentials = req.body;
     User.findOne({ email: credentials.email })
         .populate('img')
-        .exec(async (err: Error, userDb: IUser) => {
+        .exec(async(err: Error, userDb: IUser) => {
             if (err) {
                 return res.status(500).json({ ok: false, err })
             }
@@ -28,12 +31,12 @@ export const login = (req: Request, res: Response)=>{
             userDb.password = ':)';
             let userInToken = userDb
             let token = await jwt.sign({ userInToken }, process.env.TOKEN_SEED, { expiresIn: 300000 });
-            res.status(200).json({
-                ok: true,
-                user: userDb,
-                token
-            })
-        })
+              res.status(200).json({
+                    ok: true,
+                    user: userDb,
+                    token
+                });
+        });
     }
 
 export const checkToken = (req: Request, res: Response)=>{
@@ -68,6 +71,58 @@ export const refreshToken = (req: Request, res: Response) => {
             ok: true,
             user:userInToken,
             token
+        })
+    })
+}
+
+export const userOnline = (userIn: mongoose.Types.ObjectId )=>{
+  return new Promise((resolve,reject)=>{
+      UsersOnline.find({},(err,usersOnlineDb)=>{
+          if(err){
+              reject({ ok: false, err });
+          }
+          if(usersOnlineDb.length === 0){
+              const newUsersOnline= new UsersOnline({users:[userIn]});
+              newUsersOnline.save((err,usersOnlineSaved)=>{
+                  if (err) {
+                      reject({ ok: false, err }) 
+                  }
+                  resolve({ok:true}); 
+              })
+          }else{
+              if(usersOnlineDb[0].users.includes(userIn)){
+                  reject({ ok: false, message: 'Sorry, someone is currently using the user' })
+              }else{
+                  usersOnlineDb[0].users.push(userIn);
+                  usersOnlineDb[0].save((err, userOnlineSaved) => {
+                      if (err) {
+                         reject({ ok: false, err })
+                      }
+                      resolve({ok:true});
+                  });
+              }
+          };
+      });
+  });
+}
+
+export const userOffline = (userOut: mongoose.Types.ObjectId )=>{
+    return new Promise((resolve,reject)=>{
+        UsersOnline.find({},(err,usersOnlineDb)=>{
+            if (err) {
+                reject({ ok: false, err })
+            }
+            if(usersOnlineDb.length > 0){
+                usersOnlineDb[0].users = usersOnlineDb[0].users.filter((u) => {return u.toString() != userOut.toString() });
+                usersOnlineDb[0].save((err, userOnlineSaved) => {
+                    if (err) {
+                        reject({ ok: false, err })
+                    }
+                    resolve(true);
+                });
+            }else{
+                resolve(true);
+            }
         })
     })
 }

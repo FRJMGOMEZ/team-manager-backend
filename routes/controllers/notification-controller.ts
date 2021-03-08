@@ -3,6 +3,7 @@ import Notification from '../../models/notification.model';
 import mongoose from 'mongoose';
 import { INotification } from '../../models/notification.model';
 import { SocketUsersList } from '../../sockets-config/socket-users-list';
+import ObjectId from 'mongoose';
 
 
 const socketUsersList = SocketUsersList.instance;
@@ -53,24 +54,24 @@ export const putNotification = (req: Request, res: Response)=>{
 export const getNotifications = (req: Request, res: Response) => {
     const skip = Number(req.headers.skip);
     const limit = Number(req.headers.limit);
-    const from = ''
-    const to = ''
+    const from = req.query.from ? Number(req.query.from) : '' ;
+    const to = req.query.to ? Number(req.query.to) : '';
     const project = req.query.project;
     const userTo = req.query.userTo as string;
-    const userFrom = req.query.userForm as string;
+    const userFrom = req.query.userFrom as string;
     const checked = req.query.checked;
     const specialQuerys = ['from','to','userTo','checked','userFrom','project'];
     let querys = Object.keys(req.query).reduce((acum:{[key:string]:any},key)=>{ !specialQuerys.includes(key) ? acum[key] = req.query[key] : null ; return acum },{});
     userTo ?  querys['usersTo.user'] = mongoose.Types.ObjectId(userTo)  : null;
     checked ? querys['usersTo.checked'] = checked : null;
-   
-    userFrom ? querys.userFrom = mongoose.Types.ObjectId(userFrom) : null;
+    /// FIXME
+    /* userFrom ? ObjectId.isValidObjectId(userFrom) ? querys.userFrom = mongoose.Types.ObjectId(userFrom) : null: null */
     Notification.count({ ...querys, date: { $gte: from ? from : 0, $lte: to ? to : 9999999999999 }} , (err, count) => {
         if (err) {
             return res.status(500).json({ ok: false, err })
         }
         Notification
-            .find(querys)
+            .find({ ...querys, date: { $gte: from ? from : 0, $lte: to ? to : 9999999999999 }})
             .sort({ _id: -1 })
             .skip(skip)
             .limit(limit)
@@ -81,7 +82,6 @@ export const getNotifications = (req: Request, res: Response) => {
                 if (err) {
                     return res.status(500).json({ ok: false, err })
                 }
-            
                 const notifications= project ? notificationsDb.filter((n)=>{ return (n.project as any).name.includes(project)}) : notificationsDb;
                 count-=notificationsDb.length - notifications.length;
                 notificationsDb = notifications;

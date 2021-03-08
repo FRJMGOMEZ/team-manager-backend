@@ -11,12 +11,15 @@ import { INotification } from '../../models/notification.model';
 import { postNotification } from './notification-controller';
 import { PrevState } from '../../models/prev-state';
 
+const PREV_VERSION_SKIP_PROPERTIES = ['actionsRequired', '_id']
+
 const socketUsersList = SocketUsersList.instance;
 export const getProjects = (req: Request, res: Response) => {
     let userOnline = req.body.userInToken;
     Project.find({ participants: userOnline._id })
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
         .populate({ path: 'administrators', model: 'User', select: 'name _id' })
+        .populate({path:'createdBy',model:'User',select:'name _id'})
         .exec((err: Error, projectsDb: IProject[]) => {
             if (err) {
                 return res.status(500).json({ ok: false, err })
@@ -43,6 +46,7 @@ export const getProjectById = (req: Request, res: Response) => {
         .populate(
             'participants'
         )
+        .populate('createdBy')
         .exec((err, projectDb) => {
             if (err) {
                 return res.status(500).json({ ok: false, err });
@@ -56,8 +60,10 @@ export const getProjectById = (req: Request, res: Response) => {
 
 export const postProject = (req: Request, res: Response) => {
     let body = req.body;
+    let user = req.body.userInToken;
     let project = new Project({
         name: body.name,
+        createdBy:user._id,
         participants: body.participants,
         administrators: body.administrators,
     });
@@ -66,9 +72,9 @@ export const postProject = (req: Request, res: Response) => {
             return res.status(500).json({ ok: false, err });
         }
         project.populate({ path: 'participants', model: 'User', select: 'name _id' })
+               .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
                .populate({ path: 'administrators', model: 'User', select: 'name _id' }).execPopulate().then((projectSaved:IProject)=>{
                    res.status(200).json({ project: projectSaved });
-                   let user = req.body.userInToken;
                    createNotification(res, { name: user.name, _id: user._id }, projectSaved, 'POST', projectSaved).then(() => {
                        broadcastProjectEvent(user._id, projectSaved, 'POST', projectSaved);
                    });
@@ -81,7 +87,7 @@ export const putProject = (req: Request, res: Response) => {
 
     const project = req.body.project;
     const id = req.params.id; 
-    Project.findByIdAndUpdate(id,{...project})
+    Project.findByIdAndUpdate(id,{...project},{new:false})
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
         .populate({ path: 'administrators', model: 'User', select: 'name _id' })
        .exec((err, projectDb) => {
@@ -91,6 +97,7 @@ export const putProject = (req: Request, res: Response) => {
         if (!projectDb) {
             return res.status(404).json({ ok: false, message: 'There are no projects with the ID provided' })
         }
+        console.log({projectDb});
         Project.findById(projectDb._id)
             .populate({ path: 'participants', model: 'User', select: 'name _id' })
             .populate({ path: 'administrators', model: 'User', select: 'name _id' })
@@ -164,6 +171,7 @@ export const setPrevState = (res: Response, currentProject: IProject, prevProjec
         Project.findByIdAndUpdate(currentProject._id, { $push: { prevStates: prevState } }, { new: true })
             .populate({ path: 'participants', model: 'User', select: 'name _id' })
             .populate({ path: 'administrators', model: 'User', select: 'name _id' })
+            .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
             .exec((err: Error, projectUpdated: IProject) => {
                 if (err) {
                     reject(res.status(500).json({ ok: false, err }))
@@ -178,11 +186,12 @@ export const setPrevState = (res: Response, currentProject: IProject, prevProjec
 
 const calculatePrevState = (currentProject: any, prevProject: IProject, user: any) => {
     let prevState:PrevState= { user:{name:user.name,_id:user._id},date:new Date().getTime(),changes:{} }
+    console.log({currentProject,prevProject});
     Object.keys(currentProject._doc).forEach((key: string) => {
         if ((key === 'participants' || key === 'administrators') && (JSON.stringify(prevProject.get(key)) != JSON.stringify(currentProject.get(key))) ){
             prevState.changes[key] =(prevProject[key] as any).map((u:any)=>{ return{_id:u._id,name:u.name}})
-        }else{
-            if (JSON.stringify(prevProject.get(key)) != JSON.stringify(currentProject.get(key)) && key != '._id') { prevState.changes[key] = prevProject.get(key) }    
+        } else if (!PREV_VERSION_SKIP_PROPERTIES.includes(key)){
+            if (JSON.stringify(prevProject.get(key)) != JSON.stringify(currentProject.get(key))) { prevState.changes[key] = prevProject.get(key) }    
         }
     })
     return prevState;
@@ -195,7 +204,7 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
         recipients = [...new Set(recipients)];
         let notification = new Notification({ project: currentProject._id, task: null, type: 'Project', modelName: 'Project', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: currentProject._id, prevItem: {name:prevProject.name,_id:prevProject._id} })
         postNotification(res, notification).then((notificationToSend: INotification) => {
-            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients.map((p) => { return p.toString() }));
+            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients.map((p) => { return p.toString() }),true);
             resolve();
         });
     });

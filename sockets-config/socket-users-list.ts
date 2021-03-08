@@ -35,10 +35,10 @@ export class SocketUsersList{
         user.client.broadcast.to(roomId).emit(eventName,payload) 
     }
 
-    broadcastToGroup(userId:string,payload:any,eventName:string,group:string[]){
+    broadcastToGroup(userId:string,payload:any,eventName:string,group:string[],broadcastToItself:boolean=false){
         const user = this.users.find((user) => { return user.userId?.toString() === userId.toString() });
         const usersTo = this.users.filter((user)=>{ return user.userId && group.includes(user.userId)}).map((u)=>{ return u.client.id});
-        user?.client.emit(eventName, payload);
+       broadcastToItself && user ? user.client.emit(eventName, payload):null;
         usersTo.forEach((clientId)=>{
             user?.client.broadcast.to(clientId).emit(eventName,payload);
         })
@@ -48,5 +48,9 @@ export class SocketUsersList{
     emit(userId: string, payload: any, eventName: string){
         const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];
         user.client.broadcast.emit(eventName,payload);
+    }
+
+    getUserByClient(client:Socket){
+      return  this.users.find((user)=>{ return user.client.id === client.id})?.userId;
     }
 }
