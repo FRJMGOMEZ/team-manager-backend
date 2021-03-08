@@ -8,7 +8,7 @@ import uniqueValidator = require("mongoose-unique-validator");
 export interface ITask extends Document {
     name: string,
     description: string,
-    user: mongoose.Types.ObjectId | IUser,
+    createdBy: mongoose.Types.ObjectId | IUser,
     participants: mongoose.Types.ObjectId[] | IUser[]
     reviewers: mongoose.Types.ObjectId[] | IUser[]
     project: mongoose.Types.ObjectId | IProject,
@@ -27,11 +27,7 @@ export interface ITask extends Document {
 const taskSchema = new Schema({
     name: { type: String, required: true, unique:true },
     description: { type: String, required:true },
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
+    createdBy: {type: mongoose.Types.ObjectId,ref: 'User',required: true},
     participants:[{type:mongoose.Types.ObjectId, ref:'User',required:true}],
     reviewers: [{ type: mongoose.Types.ObjectId,ref:'User' }],
     project: { type: mongoose.Types.ObjectId, ref: 'Project', required: true },

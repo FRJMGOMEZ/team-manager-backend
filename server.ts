@@ -2,8 +2,12 @@ import express from 'express';
 import socketIO from 'socket.io';
 import http from 'http';
 import * as mainSockets from './sockets-config/main-sockets'
-import { socketUsersList } from './sockets-config/main-sockets';
 import { AwsBucket } from './services/aws-bucket';
+import { userOffline } from './routes/controllers/auth-controller';
+import mongoose from 'mongoose';
+import { SocketUsersList } from './sockets-config/socket-users-list';
+
+const socketUsersList = SocketUsersList.instance;
 
 export default class Server {
 
@@ -47,7 +51,10 @@ export default class Server {
         this.io.on('connection', client => {
             mainSockets.userInApp(client);
             client.on('disconnect', () => {
-                socketUsersList.leaveApp(client)
+                const userId = socketUsersList.getUserByClient(client);
+                userOffline( new mongoose.Types.ObjectId(userId)).then(()=>{
+                    socketUsersList.leaveApp(client)
+                })
             })
         })
     }

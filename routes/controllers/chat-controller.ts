@@ -67,7 +67,6 @@ export const getMessages = (req:Request,res:Response)=>{
     const limit = Number(req.headers.limit);
     Message.countDocuments({ task: taskId}, (err, count: number) => {
         if (err) {
-            console.log({err})
             return res.status(500).json({ ok: false, err })
         }
         Message.find({ task: taskId}).sort({ _id: -1 })

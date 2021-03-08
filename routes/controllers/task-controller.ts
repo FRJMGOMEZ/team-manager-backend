@@ -12,8 +12,6 @@ import Message from '../../models/message.model';
 import { postNotification} from './notification-controller';
 import { PrevState } from '../../models/prev-state';
 import { setActionRequired, removeActionRequired } from './actions-required.controller';
-import ActionRequired from '../../models/action-required.model';
-
 
 const ACTIONS_REQUIRED_PROPERTIES = ['status'];
 const PREV_VERSION_SKIP_PROPERTIES = ['actionsRequired','_id']
@@ -24,7 +22,7 @@ export const postTask = (req: Request, res: Response) => {
     let task = new Task({
         name: body.name,
         description: body.description,
-        user: body.userInToken._id,
+        createdBy: body.userInToken._id,
         participants: body.participants,
         reviewers:body.reviewers,
         project: body.project ? body.project : null,
@@ -40,6 +38,7 @@ export const postTask = (req: Request, res: Response) => {
         taskSaved
         .populate({path: 'participants',model: 'User',select: 'name _id'})
         .populate({path: 'reviewers',model: 'User',select: 'name _id'})
+        .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
         .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
         .execPopulate().then((taskSaved)=>{
             let user: IUser = req.body.userInToken;
@@ -88,7 +87,7 @@ export const getTasks = (req: Request, res: Response) => {
 export const getTaskById = (req: Request, res: Response) => {
     let id = req.params.id;
     Task.findById(id)
-        .populate({ path: 'user', model: 'User', select: 'name _id' })
+        .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
         .populate({ path: 'project', model: 'Project', select: 'name _id' })
         .populate({ path: 'participants', model: 'User', select: 'name _id' })
         .populate({path: 'reviewers',model: 'User',select: 'name _id'})
@@ -114,6 +113,7 @@ export const putTask = (req: Request, res: Response) => {
      .populate({ path: 'participants', model: 'User', select: 'name _id' })
      .populate({path: 'reviewers',model: 'User',select: 'name _id'})
      .populate({ path: 'actionsRequired', model: 'ActionRequired',select:'property'})
+     .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
      .exec((err, taskDb: ITask)=>{
         if (err) {
             return res.status(500).json({ ok: false, err })
@@ -145,6 +145,7 @@ export const putTask = (req: Request, res: Response) => {
                      .populate({ path: 'participants', model: 'User', select: 'name _id' })
                      .populate({ path: 'project', model: 'Project', select: 'name _id' })
                      .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+                     .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
                      .execPopulate().then((taskPopulated) => {
                          let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
                          setPrevState(res, taskPopulated, taskPrev, user).then((taskUpdated: ITask) => {
@@ -174,21 +175,18 @@ const setStatusChange = (res:Response,taskDb:ITask,newStatus:string,user:IUser)=
             case 'on review':
                 if (newStatus === 'pending') {
                     taskDb.status = 'pending';
-                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
-                    taskDb.extraTime += new Date().getTime() - taskDb.deliverDate;
+                    taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.deliverDate : new Date().getTime() - taskDb.deliverDate;
                     taskDb.deliverDate = 0;
                 } else if (newStatus === 'done') {
                     taskDb.status = 'done';
                     taskDb.validationTime = new Date().getTime();
-                    taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
-                    taskDb.extraTime += taskDb.validationTime - taskDb.deliverDate;
+                    taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.deliverDate : new Date().getTime() - taskDb.deliverDate;
                 }
                 actionRequiredProm = removeActionRequired(res,taskDb, 'status')
                 break;
             case 'done':
                 taskDb.status = 'pending';
-                taskDb.extraTime = !taskDb.extraTime ? 0 : taskDb.extraTime;
-                taskDb.extraTime += new Date().getTime() - taskDb.validationTime;
+                taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.validationTime : new Date().getTime() - taskDb.validationTime;
                 taskDb.validationTime = 0;
                 actionRequiredProm = Promise.resolve(taskDb);
                 break;
@@ -229,9 +227,13 @@ export const deleteTask = (req: Request, res: Response) => {
 export const setPrevState = (res: Response, currentTask: any, prevTask: ITask, user: any) => {
     return new Promise<ITask>((resolve, reject) => {
         let prevState: PrevState = calculatePrevState(currentTask, prevTask, user);
+        if(Object.keys(prevState.changes).length === 0){
+            return res.status(403).json({ok:false,message:'The version you want to restore is equal to the current one'})
+        }
         Task.findByIdAndUpdate(currentTask._id, { $push: { prevStates: prevState } }, { new: true })
             .populate({path: 'participants',model: 'User',select: 'name _id'})
             .populate({ path: 'reviewers', model: 'User', select: 'name _id' })
+            .populate({ path: 'createdBy', model: 'User', select: 'name _id' })
             .populate({ path: 'actionsRequired', model: 'ActionRequired', populate: [{ path: 'usersTo', model: 'User', select: 'name _id' }, { path: 'userFrom', model: 'User', select: 'name _id' }] })
             .exec((err: Error, taskUpdated: ITask) => {
                 if (err) {
@@ -265,7 +267,7 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
         recipients = [...new Set(recipients)];
         let notification = new Notification({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: task._id, prevItem: {name:prevTask.name,_id:prevTask._id},actionsRequired})
         postNotification(res, notification).then((notificationToSend: INotification) => {
-            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients)
+            socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients,true)
             resolve();
         })
     })

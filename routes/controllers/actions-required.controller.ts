@@ -17,15 +17,19 @@ export const setActionRequired = (res:Response,itemDb: any, property: string, op
 
 export const removeActionRequired = (res:Response,itemDb: any, property: string) => {
     return new Promise((resolve,reject)=>{
-        console.log(itemDb.actionsRequired);
         const actionR = itemDb.actionsRequired.find((ar: any) => { return ar.property === property });
-        ActionRequired.findByIdAndDelete(actionR._id, (err, actionRequiredDb) => {
-            if (err) {
-                reject(res.status(500).json({ ok: false, err }))
-            }
-            itemDb.actionsRequired = itemDb.actionsRequired.filter((ar: any) => { return ar.property !== property });
+        if(actionR){
+            ActionRequired.findByIdAndDelete(actionR._id, (err, actionRequiredDb) => {
+                if (err) {
+                    reject(res.status(500).json({ ok: false, err }))
+                }
+                itemDb.actionsRequired = itemDb.actionsRequired.filter((ar: any) => { return ar.property !== property });
+                resolve(itemDb);
+            })
+        }else{
+            
             resolve(itemDb);
-        })
+        }
     })
 }
 
