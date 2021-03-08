@@ -5,13 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npm run tsc",
-    "start": "tsc && npm run serve",
-    "serve": "node dist/index.js",
-    "tsc": "tsc",
+    "start": "node dist/index.js",
     "watch-node": "nodemon dist/index.js",
+    "serve": "node dist/index.js",
     "watch-ts": "tsc -w",
-    "deploy": "git add . && git commit -m Heroku && git push heroku master"
+    "deploy": "git add . && git commit -m Heroku && git push heroku master",
+    "tsc": "tsc"
   },
   "author": "",
   "license": "ISC",
