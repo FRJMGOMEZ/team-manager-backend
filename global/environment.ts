@@ -20,10 +20,9 @@ process.env.NODE_ENV =  process.env.NODE_ENV || 'developing';
 /////////////// BASE DE DATOS /////////////
 let urlDataBase:string;
 if (process.env.NODE_ENV === 'developing') { urlDataBase = 'mongodb://localhost:27017/team-manager' } else {
-    urlDataBase = `mongodb://${process.env.MONGO_URI}/cargodbtest`
+    urlDataBase = `${process.env.MONGO_URI}`
 };
 process.env.URLDB = urlDataBase;
-
 
 if(process.env.NODE_ENV === 'developing'){
     require('./aws');
