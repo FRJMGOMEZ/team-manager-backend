@@ -47,4 +47,3 @@ exports.userInApp = (client) => {
         });
     });
 };
-//# sourceMappingURL=main-sockets.js.map

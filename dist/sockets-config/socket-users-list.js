@@ -51,4 +51,3 @@ class SocketUsersList {
     }
 }
 exports.SocketUsersList = SocketUsersList;
-//# sourceMappingURL=socket-users-list.js.map

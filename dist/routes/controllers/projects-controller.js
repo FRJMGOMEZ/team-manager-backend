@@ -194,4 +194,3 @@ const broadcastProjectEvent = (userId, project, method, prevProject) => {
     const recipients = [...project.participants, ...oldParticipants].filter((eachParticipant) => { return eachParticipant._id.toString() != userId.toString(); }).map((e) => { return e._id.toString(); });
     socketUsersList.broadcastToGroup(userId, { project, method, prevProject }, 'projects-events', recipients);
 };
-//# sourceMappingURL=projects-controller.js.map

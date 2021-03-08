@@ -131,4 +131,3 @@ class AwsBucket {
     }
 }
 exports.AwsBucket = AwsBucket;
-//# sourceMappingURL=aws-bucket.js.map

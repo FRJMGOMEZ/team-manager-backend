@@ -25,4 +25,3 @@ const usersOnlineSchema = new mongoose_1.Schema({
 });
 const UsersOnline = mongoose_1.default.model('UsersOnline', usersOnlineSchema, 'usersOnline');
 exports.default = UsersOnline;
-//# sourceMappingURL=users-online.js.map

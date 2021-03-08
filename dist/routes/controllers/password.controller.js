@@ -111,4 +111,3 @@ exports.setNewPassword = (req, res) => {
         }
     });
 };
-//# sourceMappingURL=password.controller.js.map

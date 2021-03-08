@@ -27,4 +27,3 @@ exports.checkDemo = (req, res, next) => {
     }
 };
 module.exports = { checkDemo: exports.checkDemo };
-//# sourceMappingURL=demo.js.map

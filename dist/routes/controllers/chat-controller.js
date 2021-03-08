@@ -78,4 +78,3 @@ exports.getMessages = (req, res) => {
         });
     });
 };
-//# sourceMappingURL=chat-controller.js.map

@@ -86,4 +86,3 @@ exports.getUsers = (req, res) => {
         });
     });
 };
-//# sourceMappingURL=users-controller.js.map

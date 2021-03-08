@@ -23,4 +23,3 @@ if (process.env.NODE_ENV === 'developing') {
     require('./aws');
     require('./mailjet');
 }
-//# sourceMappingURL=environment.js.map

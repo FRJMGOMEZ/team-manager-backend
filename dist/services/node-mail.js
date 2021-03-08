@@ -51,4 +51,3 @@ class Mail {
     }
 }
 exports.default = new Mail;
-//# sourceMappingURL=node-mail.js.map

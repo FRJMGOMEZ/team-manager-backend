@@ -29,4 +29,3 @@ const fileSchema = new mongoose_1.Schema({
 fileSchema.plugin(uniqueValidator);
 const FileModel = mongoose_1.default.model('FileModel', fileSchema);
 exports.default = FileModel;
-//# sourceMappingURL=file.model.js.map

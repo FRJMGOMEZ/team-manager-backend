@@ -41,4 +41,3 @@ const taskSchema = new mongoose_1.Schema({
 taskSchema.plugin(uniqueValidator);
 const Task = mongoose_1.default.model('Task', taskSchema);
 exports.default = Task;
-//# sourceMappingURL=task.model.js.map

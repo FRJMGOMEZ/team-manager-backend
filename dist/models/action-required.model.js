@@ -30,4 +30,3 @@ const actionRequiredSchema = new mongoose_1.Schema({
 });
 const ActionRequired = mongoose_1.default.model('ActionRequired', actionRequiredSchema, 'actionsrequired');
 exports.default = ActionRequired;
-//# sourceMappingURL=action-required.model.js.map

@@ -264,4 +264,3 @@ const broadcastTasksEvents = (task, userId, method, prevTask) => {
     const recipients = [...task.participants, ...oldParticipants].filter((eachParticipant) => { return eachParticipant._id.toString() != userId.toString(); }).map((u) => { return u._id; });
     socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event', recipients.map((p) => { return p.toString(); }));
 };
-//# sourceMappingURL=task-controller.js.map

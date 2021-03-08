@@ -151,4 +151,3 @@ exports.toggleNotification = (req, res) => {
         });
     });
 };
-//# sourceMappingURL=notification-controller.js.map

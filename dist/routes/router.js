@@ -61,4 +61,3 @@ router.delete('/message/:id', verifyToken,deleteMessage)
 router.put('/save-message/:id', verifyToken,saveMessage)
 router.get('/search-message/:input', verifyToken,searchMessage)
 router.put('/remove-message/:id', verifyToken, removeMessageFromBox) */ 
-//# sourceMappingURL=router.js.map

@@ -33,4 +33,3 @@ const projectSchema = new mongoose_1.Schema({
 projectSchema.plugin(uniqueValidator, { message: '{PATH} must be unique' });
 const Project = mongoose_1.default.model('Project', projectSchema);
 exports.default = Project;
-//# sourceMappingURL=project.model.js.map

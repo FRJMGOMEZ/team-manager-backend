@@ -9,4 +9,3 @@ class SocketUser {
     }
 }
 exports.SocketUser = SocketUser;
-//# sourceMappingURL=socket-user.js.map

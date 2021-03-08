@@ -90,4 +90,3 @@ exports.deleteFile = (req, res) => {
         });
     });
 };
-//# sourceMappingURL=files-controller.js.map

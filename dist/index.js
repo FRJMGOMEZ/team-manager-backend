@@ -37,4 +37,3 @@ db.once('open', () => {
 server.start(() => {
     console.log(`SERVER: ${server.port} \x1b[32m%s\x1b[0m`, ' RUNNING');
 });
-//# sourceMappingURL=index.js.map
