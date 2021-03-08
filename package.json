@@ -6,17 +6,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "npm run tsc",
-    "start": "node dist/index.js",
+    "start": "npm run serve",
+    "serve": "node dist/index.js",
+    "tsc": "tsc",
     "watch-node": "nodemon dist/index.js",
     "watch-ts": "tsc -w",
-    "deploy": "git add . && git commit -m Heroku && git push heroku master",
-    "tsc": "tsc"
+    "deploy": "git add . && git commit -m Heroku && git push heroku master"
   },
   "author": "",
   "license": "ISC",
   "engines": {
-      "node": "12.14.0",
-      "npm": "6.13.4"
+    "node": "12.14.0",
+    "npm": "6.13.4"
   },
   "dependencies": {
     "atob": "^2.1.2",
@@ -33,7 +34,7 @@
     "node-mailjet": "3.3.1",
     "nodemailer": "^6.4.10",
     "socket.io": "^2.3.0",
-    "typescript": "3.9.3"
+    "typescript": "^3.9.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.4",
