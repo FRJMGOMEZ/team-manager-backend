@@ -1,3 +1,4 @@
+import { Console } from "console";
 
 
 
@@ -21,6 +22,7 @@ process.env.NODE_ENV =  process.env.NODE_ENV || 'developing';
 let urlDataBase:string;
 if (process.env.NODE_ENV === 'developing') { urlDataBase = 'mongodb://localhost:27017/team-manager' } else {
     urlDataBase = `${process.env.MONGO_URI}`
+ console.log({urlDataBase});
 };
 process.env.URLDB = urlDataBase;
 
