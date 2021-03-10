@@ -18,10 +18,10 @@ const options: cors.CorsOptions = {
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Credentials", "token", "skip", "limit", "query", "Access-Control-Allow-Request-Method"],
     credentials: true,
     methods: "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE",
-    origin: "https://frjmgomez.github.io",
+    origin: ["https://frjmgomez.github.io", "http://localhost:4200"],
     preflightContinue: false
 }
-/* const allowedOrigins = ["http://localhost:4200", ]; */
+/* const allowedOrigins = [, ]; */
 
 server.app.use(cors(options));
 
