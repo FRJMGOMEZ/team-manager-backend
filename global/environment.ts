@@ -1,7 +1,7 @@
 
 process.env.PORT = process.env.PORT || '3000';
 
-process.env.FRONT_URL = process.env.FRONT_URL || 'http://localhost:4200';
+process.env.FRONT_URL = process.env.FRONT_URL || "http://localhost:4200";
 
 /////////////// SEED SECRETO //////////////////////
 ////////Cambiar el seed a secreto en entorno heroku/////////

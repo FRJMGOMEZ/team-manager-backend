@@ -18,9 +18,10 @@ const options: cors.CorsOptions = {
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Credentials", "token", "skip", "limit", "query", "Access-Control-Allow-Request-Method"],
     credentials: true,
     methods: "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE",
-    origin: process.env.FRONT_URL,
+    origin: "https://frjmgomez.github.io/bee-team",
     preflightContinue: false
 }
+/* const allowedOrigins = ["http://localhost:4200", ]; */
 
 server.app.use(cors(options));
 
@@ -41,5 +42,9 @@ server.start(() => {
 })
 
 
+/* 
+mongodb+srv://frjmartinezgomez:Gondorgenwein123!@cluster0.v9kxn.mongodb.net/BEE-TEAM?retryWrites=true&w=majority
+mongodb+srv://frjmgomez:Billyshears123@cluster0.enl0p.mongodb.net/CARGOM-MUSIC-ADM?retryWrites=true&w=majority
+*/
 
 
