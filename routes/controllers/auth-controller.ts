@@ -127,6 +127,25 @@ export const userOffline = (userOut: mongoose.Types.ObjectId )=>{
     })
 }
 
+export const onServerOffDisconnection = (req: Request, res: Response)=>{
+    const userId = req.params.userId;
+    UsersOnline.find({},(err,usersOnlineDb)=>{
+        if (err) {
+            
+            res.status(500).json({ok:false,err})
+        }
+        if (usersOnlineDb.length > 0) {
+            usersOnlineDb[0].users = usersOnlineDb[0].users.filter((u) => { return u.toString() != userId });
+            usersOnlineDb[0].save((err, userOnlineSaved) => {
+                if (err) {
+                    res.status(500).json({ ok: false, err })
+                }
+                res.status(200).json({ok:true})
+            });
+        } 
+    })
+}
+
 
   
 

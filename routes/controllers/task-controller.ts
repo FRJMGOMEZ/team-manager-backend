@@ -149,8 +149,8 @@ export const putTask = (req: Request, res: Response) => {
                      .execPopulate().then((taskPopulated) => {
                          let user = { name: req.body.userInToken.name, _id: req.body.userInToken._id };
                          setPrevState(res, taskPopulated, taskPrev, user).then((taskUpdated: ITask) => {
-                             createNotification(res, user, taskUpdated, 'PUT', taskDb, actionsRequiredOperations.length > 0 ? (taskDb.actionsRequired as any).map((ar:any)=>ar._id):[]).then(() => {
-                                 broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskDb);
+                             createNotification(res, user, taskUpdated, 'PUT', taskPrev, actionsRequiredOperations.length > 0 ? (taskDb.actionsRequired as any).map((ar:any)=>ar._id):[]).then(() => {
+                                 broadcastTasksEvents(taskUpdated, user._id, 'PUT', taskPrev);
                                  res.status(200).json({ ok: true, task: taskUpdated });
                              })
                          })
@@ -276,6 +276,6 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
 const broadcastTasksEvents = (task: ITask, userId: string, method: string, prevTask?: ITask) => {
     const oldParticipants = prevTask ? prevTask.participants : [];
     const recipients = [...task.participants, ...oldParticipants].filter((eachParticipant) => { return (eachParticipant as IUser)._id.toString() != userId.toString() }).map((u) => { return (u as IUser)._id })
-    socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event',recipients.map((p) => { return p.toString() }))
+    socketUsersList.broadcastToGroup(userId, { task, method }, 'tasks-event',recipients.map((p) => { return p.toString() }),false)
 }
 

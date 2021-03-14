@@ -97,7 +97,6 @@ export const putProject = (req: Request, res: Response) => {
         if (!projectDb) {
             return res.status(404).json({ ok: false, message: 'There are no projects with the ID provided' })
         }
-        console.log({projectDb});
         Project.findById(projectDb._id)
             .populate({ path: 'participants', model: 'User', select: 'name _id' })
             .populate({ path: 'administrators', model: 'User', select: 'name _id' })
@@ -186,7 +185,6 @@ export const setPrevState = (res: Response, currentProject: IProject, prevProjec
 
 const calculatePrevState = (currentProject: any, prevProject: IProject, user: any) => {
     let prevState:PrevState= { user:{name:user.name,_id:user._id},date:new Date().getTime(),changes:{} }
-    console.log({currentProject,prevProject});
     Object.keys(currentProject._doc).forEach((key: string) => {
         if ((key === 'participants' || key === 'administrators') && (JSON.stringify(prevProject.get(key)) != JSON.stringify(currentProject.get(key))) ){
             prevState.changes[key] =(prevProject[key] as any).map((u:any)=>{ return{_id:u._id,name:u.name}})

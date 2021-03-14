@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 
-import { login, checkToken, refreshToken } from './controllers/auth-controller';
+import { login, checkToken, refreshToken, onServerOffDisconnection } from './controllers/auth-controller';
 import { postUser, getUsers } from './controllers/users-controller';
 import { verifyStatus, verifyToken} from './middlewares/auth';
 import fileUpload from 'express-fileupload'
@@ -24,6 +24,7 @@ router.get('/check-token', checkToken);
 router.get('/refresh-token',refreshToken);
 router.put('/forgot-password/:email', forgotPassword);
 router.put('/set-new-password/:email/:resetCode/:newPassword', setNewPassword);
+router.post('/on-server-off-disconnection/:userId',onServerOffDisconnection);
 
 //// USERS /////
 router.get('/users', verifyToken, getUsers);
