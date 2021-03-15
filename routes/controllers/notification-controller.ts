@@ -8,7 +8,7 @@ import ObjectId from 'mongoose';
 
 const socketUsersList = SocketUsersList.instance;
 export const broadcastNotification = (notification:INotification,userId:string,room:string)=>{
-       socketUsersList.broadcast(userId,notification,'notification',room)
+       socketUsersList.broadcastToRoom(userId,notification,'notification',room)
 }
 
 export const postNotification = (res:Response,notification:INotification)=>{

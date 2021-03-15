@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import  router  from './routes/router';
 import cors from 'cors';
+import UsersOnline from './models/users-online';
 
 /* Instanciamos el server */
 const server = Server.instance;
@@ -41,10 +42,13 @@ server.start(() => {
     console.log(`SERVER: ${server.port} \x1b[32m%s\x1b[0m`, ' RUNNING')
 })
 
+//// USER ONLINE REGISTER PURGE ////
 
-/* 
-mongodb+srv://frjmartinezgomez:Gondorgenwein123!@cluster0.v9kxn.mongodb.net/BEE-TEAM?retryWrites=true&w=majority
-mongodb+srv://frjmgomez:Billyshears123@cluster0.enl0p.mongodb.net/CARGOM-MUSIC-ADM?retryWrites=true&w=majority
-*/
+UsersOnline.deleteMany({}, (err: any) => {
+    if (err) {
+        console.error(err)
+    }
+})
+
 
 

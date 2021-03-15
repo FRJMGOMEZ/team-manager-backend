@@ -11,7 +11,7 @@ const awsBucket = AwsBucket.instance;
 const socketUsersList = SocketUsersList.instance;
 
 const broadcastMessage = (message: IMessage) => {
-    socketUsersList.broadcast((message.user as any)._id.toString(), message, 'message-in',(message.task as any)._id.toString())
+    socketUsersList.broadcastToRoom((message.user as any)._id.toString(), message, 'message-in',(message.task as any)._id.toString())
 }
 export const postMessage = (req:Request, res: Response) =>{
 

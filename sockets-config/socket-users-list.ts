@@ -30,25 +30,26 @@ export class SocketUsersList{
     getUsersInRoom(room: string) {
         return this.users.filter((u: SocketUser) => { return u.rooms.includes(room) }).map((u:SocketUser)=>{ return u.userId})
     }
-    broadcast(userId:string, payload:any,eventName:string, roomId:string){
+    broadcastToRoom(userId:string, payload:any,eventName:string, roomId:string){
         const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];
-        user.client.broadcast.to(roomId).emit(eventName,payload) 
+        user?.client.broadcast.to(roomId).emit(eventName,payload);
     }
 
     broadcastToGroup(userId:string,payload:any,eventName:string,group:string[],broadcastToItself:boolean=false){
-        const user = this.users.find((user) => { return user.userId?.toString() === userId.toString() });
-        const usersTo = this.users.filter((user)=>{ return user.userId && group.includes(user.userId)}).map((u)=>{ return u.client.id});
+       const user = this.users.find((user) => { return user.userId?.toString() === userId.toString() });
+       const usersTo = this.users.filter((user)=>{ return user.userId && group.includes(user.userId)}).map((u)=>{ return u.client.id});
        broadcastToItself && user ? user.client.emit(eventName, payload):null;
-        usersTo.forEach((clientId)=>{
+       usersTo.forEach((clientId)=>{
             user?.client.broadcast.to(clientId).emit(eventName,payload);
-        })
+       });
     }  
     
     //// EMIT THE EVENT TO ALL THE USERS CONNECTED ///
     emit(userId: string, payload: any, eventName: string){
         const user = this.users.filter((user) => { return user.userId?.toString() === userId.toString() })[0];
-        user.client.broadcast.emit(eventName,payload);
+        user?.client.broadcast.emit(eventName,payload);
     }
+
 
     getUserByClient(client:Socket){
       return  this.users.find((user)=>{ return user.client.id === client.id})?.userId;

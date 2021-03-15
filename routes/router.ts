@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 
-import { login, checkToken, refreshToken, onServerOffDisconnection } from './controllers/auth-controller';
+import { login, checkToken, refreshToken, onServerOffDisconnection, userOnline } from './controllers/auth-controller';
 import { postUser, getUsers } from './controllers/users-controller';
 import { verifyStatus, verifyToken} from './middlewares/auth';
 import fileUpload from 'express-fileupload'
@@ -13,6 +13,8 @@ import { forgotPassword, setNewPassword } from './controllers/password.controlle
 import { toggleNotification, getNotifications, getNotificationById, putNotification } from './controllers/notification-controller';
 import { postTask, getTaskById, putTask, deleteTask, getTasks} from './controllers/task-controller';
 import { postMessage, getMessages } from './controllers/chat-controller';
+import UsersOnline from '../models/users-online';
+
 export const router = Router();
 
 router.use(fileUpload());
@@ -65,10 +67,4 @@ router.get('/messages/:taskId',verifyToken, getMessages);
 export default router;
 
 
-/* 
-router.get('/messages-to-check', verifyToken,getMessagesToCheck)
-router.get('/project-files/:id', verifyToken,getFilesByProject)
-router.delete('/message/:id', verifyToken,deleteMessage)
-router.put('/save-message/:id', verifyToken,saveMessage)
-router.get('/search-message/:input', verifyToken,searchMessage)
-router.put('/remove-message/:id', verifyToken, removeMessageFromBox) */
+
