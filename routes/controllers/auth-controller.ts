@@ -128,6 +128,7 @@ export const userOffline = (userOut: mongoose.Types.ObjectId )=>{
 }
 
 export const onServerOffDisconnection = (req: Request, res: Response)=>{
+    console.log('on disconnection')
     const userId = req.params.userId;
     UsersOnline.find({},(err,usersOnlineDb)=>{
         if (err) {

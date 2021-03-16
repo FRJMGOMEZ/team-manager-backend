@@ -263,7 +263,8 @@ const calculatePrevState = (currentTask:any, prevTask: any, user: any):PrevState
 const createNotification = (res: Response, user: { name: string, _id: string }, task: ITask, method: string, prevTask: ITask,actionsRequired:any=[]) => {
     return new Promise<void>((resolve, reject) => {
         const oldParticipants = prevTask ? prevTask.participants : [];
-        let recipients = [...task.participants, ...oldParticipants].map((u)=>{  return (u as IUser)._id.toString()}).filter((u)=>{ return u.toString() != user._id});
+        let recipients = [...task.participants, ...oldParticipants].map((u)=>{  return (u as IUser)._id.toString()}).filter((u)=>{ return u.toString() != user._id.toString()});
+        recipients = [...new Set(recipients)];
         let notification = new Notification({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: task._id, prevItem: {name:prevTask.name,_id:prevTask._id},actionsRequired})
         postNotification(res, notification).then((notificationToSend: INotification) => {
             socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients,true)

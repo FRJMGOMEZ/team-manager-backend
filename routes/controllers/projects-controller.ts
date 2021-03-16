@@ -199,6 +199,7 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
     return new Promise<void>((resolve, reject) => {
         const oldParticipants = currentProject ? currentProject.participants : [];
         let recipients = ([...currentProject.participants, ...oldParticipants] as IUser[]).filter((eachParticipant:IUser) => { return eachParticipant._id.toString() != user._id.toString() }).map((p:IUser)=>{ return p._id})
+        recipients = [...new Set(recipients)];
         let notification = new Notification({ project: currentProject._id, task: null, type: 'Project', modelName: 'Project', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: currentProject._id, prevItem: {name:prevProject.name,_id:prevProject._id} })
         postNotification(res, notification).then((notificationToSend: INotification) => {
             socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients.map((p) => { return p.toString() }),true);
