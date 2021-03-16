@@ -59,7 +59,7 @@ export const getTasks = (req: Request, res: Response) => {
 
     const from: number = req.query.from ? Number(req.query.from) : -8640000000000000;
     const to: number = req.query.to ? Number(req.query.to) : 8640000000000000;
-    
+
     let participants: any = req.query.participants ? (req.query.participants as string[]).includes(req.body.userInToken._id.toString()) ? req.query.participants : [...req.query.participants as any[],req.body.userInToken] : [req.body.userInToken._id];
     if(participants != null){
         participants =  (participants as any[]).reduce((acum, string) => {
@@ -264,7 +264,6 @@ const createNotification = (res: Response, user: { name: string, _id: string }, 
     return new Promise<void>((resolve, reject) => {
         const oldParticipants = prevTask ? prevTask.participants : [];
         let recipients = [...task.participants, ...oldParticipants].map((u)=>{  return (u as IUser)._id.toString()}).filter((u)=>{ return u.toString() != user._id});
-        recipients = [...new Set(recipients)];
         let notification = new Notification({ project: task.project, task: task._id, type: 'Task', modelName: 'Task', userFrom: user._id, usersTo: recipients.map((p) => { return { checked: false, user: p } }), method: method, date: new Date().getTime(), item: task._id, prevItem: {name:prevTask.name,_id:prevTask._id},actionsRequired})
         postNotification(res, notification).then((notificationToSend: INotification) => {
             socketUsersList.broadcastToGroup(user._id, notificationToSend, 'notification', recipients,true)
