@@ -163,37 +163,56 @@ export const putTask = (req: Request, res: Response) => {
     });
 };
 
-const setStatusChange = (res:Response,taskDb:ITask,newStatus:string,user:IUser)=>{
+const setStatusChange = (res:Response,currentTask:ITask,newStatus:string,user:IUser)=>{
     return new Promise((resolve,reject)=>{
-        let actionRequiredProm:Promise<any> = Promise.resolve(taskDb);
-        switch (taskDb.status) {
+        let actionRequiredProm:Promise<any> = Promise.resolve(currentTask);
+        switch (currentTask.status) {
             case 'pending':
-                taskDb.status = 'on review';
-                taskDb.deliverDate = new Date().getTime();
-                actionRequiredProm = setActionRequired(res, taskDb,'status', ['done', 'pending'],user,'Task');
+                currentTask.deliverDate = new Date().getTime();
+                currentTask.status = 'on review';
+                actionRequiredProm = setActionRequired(res, currentTask,'status', ['done', 'pending'],user,'Task');
                 break;
             case 'on review':
                 if (newStatus === 'pending') {
-                    taskDb.status = 'pending';
-                    taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.deliverDate : new Date().getTime() - taskDb.deliverDate;
-                    taskDb.deliverDate = 0;
+                    currentTask.status = 'pending';
+                    currentTask.extraTime = currentTask.extraTime ? currentTask.extraTime + (new Date().getTime() - currentTask.deliverDate) : new Date().getTime() - currentTask.deliverDate;
+                    currentTask.deliverDate = 0;
                 } else if (newStatus === 'done') {
-                    taskDb.status = 'done';
-                    taskDb.validationTime = new Date().getTime();
-                    taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.deliverDate : new Date().getTime() - taskDb.deliverDate;
+                    currentTask.status = 'done';
+                    currentTask.validationTime = new Date().getTime();
+                    currentTask.extraTime = currentTask.extraTime ? currentTask.extraTime + (new Date().getTime() - currentTask.deliverDate) : new Date().getTime() - currentTask.deliverDate;
                 }
-                actionRequiredProm = removeActionRequired(res,taskDb, 'status')
+                actionRequiredProm = removeActionRequired(res,currentTask, 'status')
                 break;
             case 'done':
-                taskDb.status = 'pending';
-                taskDb.extraTime = taskDb.extraTime ? taskDb.extraTime + new Date().getTime() - taskDb.validationTime : new Date().getTime() - taskDb.validationTime;
-                taskDb.validationTime = 0;
-                actionRequiredProm = Promise.resolve(taskDb);
+                currentTask.status = 'pending';
+                currentTask.extraTime = currentTask.extraTime ? currentTask.extraTime + (new Date().getTime() - currentTask.validationTime) : new Date().getTime() - currentTask.validationTime;
+                currentTask.validationTime = 0;
+                actionRequiredProm = Promise.resolve(currentTask);
                 break;
         } 
-          actionRequiredProm.then((taskDb)=>{
-                 resolve(taskDb);
+          actionRequiredProm.then((currentTask)=>{
+                 resolve(currentTask);
         })
+    })
+}
+
+export const userInTask = (req: Request, res: Response) => {
+    const taskId = req.params.taskId;
+    const projectId = req.params.projectId;
+    let user = req.body.userInToken;
+    if (!ObjectId.isValidObjectId(taskId) || !ObjectId.isValidObjectId(projectId)  ) {
+        return res.send(false);
+    }
+    Task.findOne({ _id: new mongoose.Types.ObjectId(taskId), participants: { $in: user._id }, project: new mongoose.Types.ObjectId(projectId) }, (err, taskDb) => {
+        if (err) {
+            return res.status(500).json({ ok: false, err });
+        }
+        if (taskDb) {
+            res.send(true);
+        } else {
+            res.send(false);
+        }
     })
 }
 
