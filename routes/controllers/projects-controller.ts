@@ -10,6 +10,7 @@ import Notification from '../../models/notification.model';
 import { INotification } from '../../models/notification.model';
 import { postNotification } from './notification-controller';
 import { PrevState } from '../../models/prev-state';
+import ObjectId from 'mongoose';
 
 const PREV_VERSION_SKIP_PROPERTIES = ['actionsRequired', '_id']
 
@@ -149,6 +150,24 @@ export const deleteProject = (req: Request, res: Response) => {
                 });
             });
     });
+};
+
+export const userInProject = (req: Request, res: Response)=>{
+    const projectId = req.params.projectId;
+    let user = req.body.userInToken;
+    if(!ObjectId.isValidObjectId(projectId)){
+        return res.send(false);
+    }
+    Project.findOne({ _id: new mongoose.Types.ObjectId(projectId), participants: { $in: user._id } },(err,projectDb)=>{
+        if(err){
+            return res.status(500).json({ok:false,err});
+        }
+        if(projectDb){
+            res.send(true);
+        }else{
+            res.send(false);
+        }
+    })
 }
 
 

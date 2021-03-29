@@ -17,7 +17,7 @@ export const setActionRequired = (res:Response,itemDb: any, property: string, op
 
 export const removeActionRequired = (res:Response,itemDb: any, property: string) => {
     return new Promise((resolve,reject)=>{
-        const actionR = itemDb.actionsRequired.find((ar: any) => { return ar.property === property });
+        const actionR = itemDb.actionsRequired.find((ar: any) =>  ar.property === property );
         if(actionR){
             ActionRequired.findByIdAndDelete(actionR._id, (err, actionRequiredDb) => {
                 if (err) {
@@ -32,7 +32,3 @@ export const removeActionRequired = (res:Response,itemDb: any, property: string)
         }
     })
 }
-
-/* 
-0x4874f858dfd71620b3b291fea7f7792ae0c2d82d
-*/

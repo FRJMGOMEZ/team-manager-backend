@@ -106,7 +106,7 @@ export const getNotificationById = (req:Request,res:Response)=>{
     })
 }
 
-const deleteNot = (res:Response,notificationId:string)=>{
+/* const deleteNot = (res:Response,notificationId:string)=>{
   return new Promise((resolve,reject)=>{
      Notification.findByIdAndDelete(notificationId,(err:Error,notificationDeleted)=>{
          if (err) {
@@ -118,7 +118,7 @@ const deleteNot = (res:Response,notificationId:string)=>{
          resolve(true)
      })
   }) 
-}
+} */
 
 const saveNot = (res:Response,notification:INotification)=>{
     return new Promise((resolve,reject)=>{
